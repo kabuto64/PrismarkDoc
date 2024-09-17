@@ -68,6 +68,7 @@ namespace Prismark.Resources.Pages
             </html>";
 
             webView.NavigateToString(htmlContent);
+            PreviewShow();
         }
         private void ToggleMenu_Click(object sender, RoutedEventArgs e)
         {
@@ -88,10 +89,14 @@ namespace Prismark.Resources.Pages
 
         private void MarkDownEditor_TextChanged(object sender, EventArgs e)
         {
+            PreviewShow();
+        }
+
+        private void PreviewShow()
+        {
             string markdown = MarkDownEditor.Text;
-            var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
-            string html = Markdown.ToHtml(markdown, pipeline);
-            webView.NavigateToString(html);
+            Convaeters.MarkDownToHTML conv = new Convaeters.MarkDownToHTML();
+            webView.NavigateToString(conv.ToUnitHtml(markdown));
         }
     }
    
