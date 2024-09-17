@@ -9,7 +9,7 @@
         AllowsTransparency="True"
         Background="Transparent"
         ResizeMode="CanResizeWithGrip"
-        Title="Prismark" Height="768" Width="1280">
+        Title="Prismark Doc" Height="768" Width="1280">
     <Window.Resources>
         <Style x:Key="TitleBarButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>

@@ -97,7 +97,7 @@
                     Name="MarkDownEditor"
                     SyntaxHighlighting="C#"
                     FontFamily="Consolas"
-                    FontSize="12pt"
+                    FontSize="10pt"
                     ShowLineNumbers="True" TextChanged="MarkDownEditor_TextChanged">
                     <avalonEdit:TextEditor.Options>
                         <avalonEdit:TextEditorOptions
