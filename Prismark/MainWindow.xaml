@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Prismark"
+        xmlns:controls="clr-namespace:Prismark.UserControls"
         mc:Ignorable="d"
         WindowStyle="None"
         AllowsTransparency="True"
@@ -183,6 +184,76 @@
                 </Setter.Value>
             </Setter>-->
         </Style>
+        <Style x:Key="HeaderButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#DDD"/>
+            <Setter Property="Width" Value="300px"/>
+            <Setter Property="Height" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type FrameworkElement}}, Path=ActualHeight}"/>
+            <Setter Property="FontSize" Value="15px"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid>
+                            <!--<ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>-->
+                            <Border BorderThickness="0,0,2,0" 
+                                BorderBrush="#222222" 
+                                Background="{TemplateBinding Background}">
+                                <StackPanel Orientation="Horizontal">
+                                    <ContentControl x:Name="Icon" 
+                                        Content="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"
+                                        Width="24" 
+                                        Height="24" 
+                                        Margin="20,0,8,0"/>
+                                    <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" 
+                                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                </StackPanel>
+                                
+                            </Border>
+                            <Rectangle x:Name="UnderlineRect" 
+                                       Height="2" 
+                                       Fill="Transparent" 
+                                       VerticalAlignment="Bottom"/>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#1FFFFFFF"/>
+                    <!-- 半透明の白色 -->
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="Background" Value="#3FFFFFFF"/>
+                    <!-- より濃い半透明の白色 -->
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="IconTextButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}">
+                            <StackPanel Orientation="Horizontal">
+                                <ContentControl x:Name="Icon" 
+                                        Content="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"
+                                        Width="24" 
+                                        Height="24" 
+                                        Margin="0,0,8,0"/>
+                                <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" 
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                            </StackPanel>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
     <WindowChrome.WindowChrome>
@@ -242,7 +313,7 @@
         </Grid.RowDefinitions>
         <Menu Grid.Row="0">
             <MenuItem Header="ファイル"  Style="{StaticResource DarkMenuItem}">
-                <MenuItem Header="新規作成" Click="NavigateToEditor" />
+                <MenuItem Header="新規作成"/>
                 <MenuItem Header="開く"/>
                 <MenuItem Header="保存"/>
                 <Separator Style="{StaticResource DarkMenuSeparator}"/>
@@ -270,11 +341,27 @@
         </Menu>
         <!-- ナビゲーションメニュー -->
         <StackPanel Grid.Row="1" Orientation="Horizontal" Background="#FF2D2D2D" Height="50" VerticalAlignment="Top">
-
-            <!-- 他のナビゲーションボタンを追加 -->
+            <Button Content="Editor"
+                    x:Name="btnNavigateToEditor"
+                    Click="NavigateButton_Click" 
+                    Tag="{StaticResource EditIcon}"
+                    WindowChrome.IsHitTestVisibleInChrome="True" 
+                    Style="{StaticResource HeaderButtonStyle}"/>
+            <Button Content="Export" 
+                    x:Name="btnNavigateToExport"
+                    Click="NavigateButton_Click" 
+                    Tag="{StaticResource PublishIcon}"
+                    WindowChrome.IsHitTestVisibleInChrome="True" 
+                    Style="{StaticResource HeaderButtonStyle}"/>
+            <Button Content="Setting"
+                    x:Name="btnNavigateToSetting"
+                    Click="NavigateButton_Click" 
+                    Tag="{StaticResource SettingIcon}"
+                    WindowChrome.IsHitTestVisibleInChrome="True" 
+                    Style="{StaticResource HeaderButtonStyle}"/>
         </StackPanel>
 
         <!-- コンテンツを表示するためのFrame -->
-        <Frame Grid.Row="2" x:Name="MainFrame" NavigationUIVisibility="Hidden"/>
+        <Frame Grid.Row="2" x:Name="MainFrame" NavigationUIVisibility="Hidden" Navigated="MainFrame_Navigated"/>
     </Grid>
 </Window>

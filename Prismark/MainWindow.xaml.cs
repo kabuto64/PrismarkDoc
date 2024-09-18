@@ -1,7 +1,9 @@
 ﻿using Prismark.Properties;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -21,6 +23,8 @@ namespace Prismark
     /// </summary>
     public partial class MainWindow : Window
     {
+        private string _currentPage;
+        private Dictionary<string, Page> _pageCache = new Dictionary<string, Page>();
         public MainWindow()
         {
             InitializeComponent();
@@ -61,14 +65,68 @@ namespace Prismark
             this.Close();
         }
 
-        private void NavigateToEditor(object sender, RoutedEventArgs e)
+        private void NavigateButton_Click(object sender, RoutedEventArgs e)
         {
-            MainFrame.Navigate(new Resources.Pages.Editor());
+            var button = sender as Button;
+            if (button != null)
+            {
+                string pageName = button.Content.ToString();
+                if (_pageCache.TryGetValue(pageName, out var cachedPage))
+                {
+                    MainFrame.Navigate(cachedPage);
+                }
+                else
+                {
+                    Type pageType = Type.GetType($"Prismark.Resources.Pages.{pageName}");
+                    if (pageType != null)
+                    {
+                        var newPage = (Page)Activator.CreateInstance(pageType);
+                        _pageCache[pageName] = newPage;
+                        MainFrame.Navigate(newPage);
+                    }
+                }
+            }
         }
 
         private void NavigateToSettings(object sender, RoutedEventArgs e)
         {
             MainFrame.Navigate(new Resources.Pages.Setting());
+        }
+
+        private void MainFrame_Navigated(object sender, NavigationEventArgs e)
+        {
+            UpdateButtonHighlight();
+        }
+        private void UpdateButtonHighlight()
+        {
+            //すべてのボタンのハイライトを解除
+            SetButtonUnderline(btnNavigateToEditor, false);
+            SetButtonUnderline(btnNavigateToExport, false);
+            SetButtonUnderline(btnNavigateToSetting, false);
+            btnNavigateToEditor.IsEnabled = true;
+            btnNavigateToExport.IsEnabled = true;
+            btnNavigateToSetting.IsEnabled = true;
+
+            // 現在のページに対応するボタンをハイライト
+            if (MainFrame.Content is Page currentPage)
+            {
+                string pageName = currentPage.GetType().Name;
+                var button = FindName($"btnNavigateTo{pageName}") as Button;
+                if (button != null)
+                {
+                    SetButtonUnderline(button,true); // ハイライト色
+                    button.IsEnabled = false;
+                }
+            }
+        }
+        private void SetButtonUnderline(Button button, bool isHighlighted)
+        {
+            if (button.Template.FindName("UnderlineRect", button) is Rectangle underline)
+            {
+                Color color = (Color)ColorConverter.ConvertFromString("#0295ff");
+                SolidColorBrush brush = new SolidColorBrush(color);
+                underline.Fill = isHighlighted ? brush : Brushes.Transparent;
+            }
         }
     }
 }

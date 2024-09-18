@@ -16,7 +16,7 @@ namespace Prismark.Convaeters
         {
             var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
             string htmlContent = Markdown.ToHtml(md, pipeline);
-            string css = GetEmbeddedResourceContent("Prismark.Styles.style.css");
+            string css = GetEmbeddedResourceContent("Prismark.Base.style.css");
             htmlContent = $@"
 <!DOCTYPE html>
 <html>
@@ -27,7 +27,9 @@ namespace Prismark.Convaeters
     </style>
 </head>
 <body>
-    {htmlContent}
+    <div class=""content-pane"">
+        {htmlContent}
+    </div>
 </body>
 </html>";
 
