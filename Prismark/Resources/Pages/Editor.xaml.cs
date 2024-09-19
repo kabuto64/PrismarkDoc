@@ -19,7 +19,11 @@ using ICSharpCode.AvalonEdit;
 using ICSharpCode.AvalonEdit.Highlighting.Xshd;
 using ICSharpCode.AvalonEdit.Highlighting;
 using Markdig;
+using Xceed.Wpf.Toolkit;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox;
+using System.Windows.Controls.Primitives;
+using System.Windows.Forms;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Prismark.Resources.Pages
 {
@@ -28,8 +32,12 @@ namespace Prismark.Resources.Pages
     /// </summary>
     public partial class Editor : Page
     {
+        private int _currentLine;
+        private int _currentColumn;
+        private List<Color> _predefinedColors;
         public Editor()
         {
+
             InitializeComponent();
             InitializeAsync();
             // シンタックスハイライト定義ファイルを読み込む
@@ -41,34 +49,33 @@ namespace Prismark.Resources.Pages
                     MarkDownEditor.SyntaxHighlighting = HighlightingLoader.Load(reader, HighlightingManager.Instance);
                 }
             }
-            
+
             // テキスト変更時のイベントハンドラを設定
             MarkDownEditor.TextChanged += MarkDownEditor_TextChanged;
+            MarkDownEditor.TextArea.Caret.PositionChanged += Caret_PositionChanged;
+
+            // ポップアップが開いたときにフォーカスを設定
+            ColorPickerPopup.Opened += (s, e) => ColorCanvas.Focus();
+
+            // 規定の色リストを初期化
+            InitializePredefinedColors();
+
 
         }
         async void InitializeAsync()
         {
             await webView.EnsureCoreWebView2Async(null);
-
-            string htmlContent = @"
-            <html>
-            <head>
-                <style>
-                    body { 
-                        font-family: Arial, sans-serif;
-                        background-color: #222;
-                        color: #c4c4c4;
-                    }
-                </style>
-            </head>
-            <body>
-                <h1>Hello, World!</h1>
-                <p>This is a paragraph.</p>
-            </body>
-            </html>";
-
-            webView.NavigateToString(htmlContent);
             PreviewShow();
+        }
+        private void InitializePredefinedColors()
+        {
+            _predefinedColors = new List<Color>
+            {
+                Colors.Red, Colors.Blue, Colors.Green, Colors.Yellow,
+                Colors.Orange, Colors.Purple, Colors.Pink, Colors.Brown,
+                Colors.Gray, Colors.Black, Colors.White, Colors.Cyan
+            };
+            PredefinedColorsList.ItemsSource = _predefinedColors.Select(c => new SolidColorBrush(c));
         }
         private void ToggleMenu_Click(object sender, RoutedEventArgs e)
         {
@@ -90,13 +97,308 @@ namespace Prismark.Resources.Pages
         private void MarkDownEditor_TextChanged(object sender, EventArgs e)
         {
             PreviewShow();
+            StatusBarChange();
         }
+        private void Caret_PositionChanged(object sender, EventArgs e)
+        {
+            StatusBarChange();
+        }
+        
 
         private void PreviewShow()
         {
             string markdown = MarkDownEditor.Text;
             Convaeters.MarkDownToHTML conv = new Convaeters.MarkDownToHTML();
             webView.NavigateToString(conv.ToUnitHtml(markdown));
+        }
+        private void StatusBarChange()
+        {
+            int wordCount = MarkDownEditor.Text.Count(c => !char.IsWhiteSpace(c));
+            _currentLine = MarkDownEditor.TextArea.Caret.Line;
+            _currentColumn = MarkDownEditor.TextArea.Caret.Column;
+
+            Words.Text = $"Words: {wordCount}";
+            Lines.Text = $"Lines: {_currentLine}";
+            Col.Text = $"Col: {_currentColumn}";
+        }
+
+
+        #region マークダウン適用ロジック
+        /// <summary>
+        /// 見出し（大）
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void btnEditH1_Click(object sender, RoutedEventArgs e)
+        {
+            ApplyLineStartMarkdown("# ");
+        }
+        /// <summary>
+        /// 見出し（中）
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void btnEditH2_Click(object sender, RoutedEventArgs e)
+        {
+            ApplyLineStartMarkdown("## ");
+        }
+        /// <summary>
+        /// 見出し（小）
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void btnEditH3_Click(object sender, RoutedEventArgs e)
+        {
+            ApplyLineStartMarkdown("### ");
+        }
+        /// <summary>
+        /// 太字
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void btnEditBold_Click(object sender, RoutedEventArgs e)
+        {
+            ApplySurroundMarkdown("**");
+        }
+        /// <summary>
+        /// 斜体
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void btnEdititalic_Click(object sender, RoutedEventArgs e)
+        {
+            ApplySurroundMarkdown("*");
+        }
+        /// <summary>
+        /// 下線
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void btnEditUnderline_Click(object sender, RoutedEventArgs e)
+        {
+            ApplyStartEndMarkdown("<u>", "</u>");
+        }
+        /// <summary>
+        /// 打ち消し線
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void btnEditStrikethrough_Click(object sender, RoutedEventArgs e)
+        {
+            ApplySurroundMarkdown("~~");
+
+        }
+        /// <summary>
+        /// 引用
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void btnEditQuote_Click(object sender, RoutedEventArgs e)
+        {
+            ApplyLineStartMarkdown(">");
+        }
+        /// <summary>
+        /// インラインコード
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void btnEditCode_Click(object sender, RoutedEventArgs e)
+        {
+            ApplySurroundMarkdown("`");
+        }
+        /// <summary>
+        /// リンク
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void btnEditLink_Click(object sender, RoutedEventArgs e)
+        {
+            ApplyStartEndMarkdown("[", "](URL)");
+        }
+        /// <summary>
+        /// 文字列を着色
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void btnEditColor_Click(object sender, RoutedEventArgs e)
+        {
+            ApplyStartEndMarkdown($@"<span style=""color:{ColorTextBox.Text}"">", $"<span/>");
+        }
+        /// <summary>
+        /// 箇条書き
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void btnEditList_Click(object sender, RoutedEventArgs e)
+        {
+            ApplyLineStartMarkdown("- ");
+        }
+        /// <summary>
+        /// 番号付きリスト
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void btnEditListNum_Click(object sender, RoutedEventArgs e)
+        {
+            ApplyLineStartMarkdown("x. ");
+        }
+        /// <summary>
+        /// 選択範囲にマークダウン適用（前後に囲うタイプ）
+        /// </summary>
+        /// <param name="markdownSymbol"></param>
+        private void ApplySurroundMarkdown(string markdownSymbol)
+        {
+            if (MarkDownEditor == null) return;
+
+            var document = MarkDownEditor.Document;
+            var selection = MarkDownEditor.TextArea.Selection;
+
+            if (selection.IsEmpty)
+            {
+                // 選択がない場合、カーソル位置にマークダウンを挿入
+                int offset = MarkDownEditor.CaretOffset;
+                document.Insert(offset, markdownSymbol + markdownSymbol);
+                MarkDownEditor.CaretOffset = offset + markdownSymbol.Length;
+            }
+            else
+            {
+                // 選択範囲の前後にマークダウンを挿入
+                int startOffset = document.GetOffset(selection.StartPosition.Location);
+                int endOffset = document.GetOffset(selection.EndPosition.Location);
+
+                if (startOffset > endOffset)
+                {
+                    (startOffset, endOffset) = (endOffset, startOffset);
+
+                }
+
+                // 選択テキストを取得し、末尾の空白文字を削除
+                string selectedText = document.GetText(startOffset, endOffset - startOffset).TrimEnd();
+
+                document.BeginUpdate();
+                document.Remove(startOffset, endOffset - startOffset);
+                document.Insert(startOffset, markdownSymbol + selectedText + markdownSymbol);
+
+                document.EndUpdate();
+            }
+        }
+        /// <summary>
+        /// 選択範囲にマークダウン適用（前後で違うタイプ）
+        /// </summary>
+        /// <param name="openTag"></param>
+        /// <param name="closeTag"></param>
+        private void ApplyStartEndMarkdown(string openTag, string closeTag = null)
+        {
+            if (MarkDownEditor == null) return;
+
+            var document = MarkDownEditor.Document;
+            var selection = MarkDownEditor.TextArea.Selection;
+
+            if (closeTag == null) closeTag = openTag;
+
+            if (selection.IsEmpty)
+            {
+                // 選択がない場合、カーソル位置にマークダウンを挿入
+                int offset = MarkDownEditor.CaretOffset;
+                document.Insert(offset, openTag + closeTag);
+                MarkDownEditor.CaretOffset = offset + openTag.Length;
+            }
+            else
+            {
+                int startOffset = document.GetOffset(selection.StartPosition.Location);
+                int endOffset = document.GetOffset(selection.EndPosition.Location);
+
+                if (startOffset > endOffset)
+                {
+                    (startOffset, endOffset) = (endOffset, startOffset);
+                }
+
+                // 選択テキストを取得し、末尾の空白文字を削除
+                string selectedText = document.GetText(startOffset, endOffset - startOffset).TrimEnd();
+
+                document.BeginUpdate();
+                document.Remove(startOffset, endOffset - startOffset);
+                document.Insert(startOffset, openTag + selectedText + closeTag);
+                document.EndUpdate();
+            }
+        }
+        /// <summary>
+        /// 選択範囲（現在行）にマークダウン適用（行先頭につけるタイプ）
+        /// </summary>
+        /// <param name="markdownSymbol"></param>
+        private void ApplyLineStartMarkdown(string markdownSymbol)
+        {
+            if (MarkDownEditor == null) return;
+
+            var document = MarkDownEditor.Document;
+            var selection = MarkDownEditor.TextArea.Selection;
+
+            // 番号付きリスト用オプション
+            int num = 1; bool isNumList = (markdownSymbol == "x. ");
+
+            // 選択範囲の開始行と終了行を取得
+            int startLine = selection.IsEmpty ? MarkDownEditor.TextArea.Caret.Line : selection.StartPosition.Line;
+            int endLine = selection.IsEmpty ? startLine : selection.EndPosition.Line;
+
+            document.BeginUpdate();
+
+            for (int line = startLine; line <= endLine; line++)
+            {
+                // 各行の先頭にマークダウンシンボルを挿入
+                int lineStartOffset = document.GetLineByNumber(line).Offset;
+                if (isNumList)
+                {
+                    document.Insert(lineStartOffset, markdownSymbol.Replace("x", num.ToString()));
+                }
+                else
+                {
+                    document.Insert(lineStartOffset, markdownSymbol);
+                }
+                num++;
+            }
+            document.EndUpdate();
+
+            // 選択範囲を更新（挿入されたマークダウンシンボルを含める）
+            int newStartOffset = document.GetLineByNumber(startLine).Offset;
+            int newEndOffset = document.GetLineByNumber(endLine).EndOffset;
+            MarkDownEditor.Select(newStartOffset, newEndOffset - newStartOffset);
+        }
+        #endregion
+
+
+        private void ColorPickerPopup_Opened(object sender, EventArgs e)
+        {
+            ColorCanvas.Focus();
+        }
+
+
+        private void ColorTextBox_GotFocus(object sender, RoutedEventArgs e)
+        {
+            ColorPickerPopup.IsOpen = true;
+        }
+
+        private void ColorOkButton_Click(object sender, RoutedEventArgs e)
+        {
+            ColorPickerPopup.IsOpen = false;
+        }
+
+        private void ColorCanvas_SelectedColorChanged(object sender, RoutedPropertyChangedEventArgs<Color?> e)
+        {
+            if (e.NewValue.HasValue)
+            {
+                Color selectedColor = e.NewValue.Value;
+                string hexColor = $"#{selectedColor.R:X2}{selectedColor.G:X2}{selectedColor.B:X2}";
+                ColorTextBox.Text = hexColor;
+                btnEditColor.Foreground = (Brush)new BrushConverter().ConvertFrom(hexColor);
+            }
+        }
+
+        private void PredefinedColorsList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (PredefinedColorsList.SelectedItem is SolidColorBrush selectedBrush)
+            {
+                ColorCanvas.SelectedColor = selectedBrush.Color;
+            }
         }
     }
    

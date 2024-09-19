@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -15,6 +16,10 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using Newtonsoft.Json;
+using System.Diagnostics;
+using System.Configuration;
+using IWshRuntimeLibrary;
 
 namespace Prismark
 {
@@ -24,11 +29,17 @@ namespace Prismark
     public partial class MainWindow : Window
     {
         private string _currentPage;
+        private string _currentProjectPath;
+
+        private string workingDirectory;
+
         private Dictionary<string, Page> _pageCache = new Dictionary<string, Page>();
         public MainWindow()
         {
             InitializeComponent();
             this.StateChanged += MainWindow_StateChanged;
+
+            //SelectWorkingDirectory();
         }
         private void MainWindow_StateChanged(object sender, EventArgs e)
         {
@@ -43,6 +54,7 @@ namespace Prismark
                 this.BorderThickness = new Thickness(0);
             }
         }
+        #region 最小化／最大化／閉じる
         private void MinimizeButton_Click(object sender, RoutedEventArgs e)
         {
             this.WindowState = WindowState.Minimized;
@@ -64,7 +76,9 @@ namespace Prismark
         {
             this.Close();
         }
+        #endregion
 
+        #region ナビゲーション関連
         private void NavigateButton_Click(object sender, RoutedEventArgs e)
         {
             var button = sender as Button;
@@ -114,7 +128,7 @@ namespace Prismark
                 var button = FindName($"btnNavigateTo{pageName}") as Button;
                 if (button != null)
                 {
-                    SetButtonUnderline(button,true); // ハイライト色
+                    SetButtonUnderline(button, true); // ハイライト色
                     button.IsEnabled = false;
                 }
             }
@@ -128,5 +142,76 @@ namespace Prismark
                 underline.Fill = isHighlighted ? brush : Brushes.Transparent;
             }
         }
+
+
+        #endregion
+
+
+        private void SelectWorkingDirectory()
+        {
+            // 前回の作業フォルダを取得
+            string lastWorkingDir = ConfigurationManager.AppSettings["LastWorkingDirectory"];
+
+            if (string.IsNullOrEmpty(lastWorkingDir) || !Directory.Exists(lastWorkingDir))
+            {
+                var dialog = new System.Windows.Forms.FolderBrowserDialog();
+                dialog.Description = "作業フォルダを選択してください";
+                dialog.ShowNewFolderButton = true;
+
+                if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                {
+                    workingDirectory = dialog.SelectedPath;
+                }
+                else
+                {
+                    MessageBox.Show("作業フォルダが選択されていません。アプリケーションを終了します。");
+                    Application.Current.Shutdown();
+                    return;
+                }
+            }
+            else
+            {
+                workingDirectory = lastWorkingDir;
+            }
+
+            // 必要なフォルダを作成
+            CreateRequiredFolders();
+
+            // ショートカットを作成
+            CreateShortcut();
+
+            // 作業フォルダを設定ファイルに保存
+            SaveWorkingDirectory();
+        }
+
+        private void CreateRequiredFolders()
+        {
+            Directory.CreateDirectory(System.IO.Path.Combine(workingDirectory, "md"));
+            Directory.CreateDirectory(System.IO.Path.Combine(workingDirectory, "img"));
+        }
+
+        private void CreateShortcut()
+        {
+            string shortcutPath = System.IO.Path.Combine(workingDirectory, "DocuForge.lnk");
+            string targetPath = Process.GetCurrentProcess().MainModule.FileName;
+
+            WshShell shell = new WshShell();
+            IWshShortcut shortcut = (IWshShortcut)shell.CreateShortcut(shortcutPath);
+
+            shortcut.TargetPath = targetPath;
+            shortcut.WorkingDirectory = workingDirectory;
+            shortcut.Description = "DocuForge Shortcut";
+            shortcut.Save();
+        }
+
+        private void SaveWorkingDirectory()
+        {
+            Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+            config.AppSettings.Settings["LastWorkingDirectory"].Value = workingDirectory;
+            config.Save(ConfigurationSaveMode.Modified);
+            ConfigurationManager.RefreshSection("appSettings");
+        }
+
+
     }
 }

@@ -186,10 +186,10 @@
         </Style>
         <Style x:Key="HeaderButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="#DDD"/>
-            <Setter Property="Width" Value="300px"/>
+            <Setter Property="Foreground" Value="#EEE"/>
+            <Setter Property="Width" Value="250px"/>
             <Setter Property="Height" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type FrameworkElement}}, Path=ActualHeight}"/>
-            <Setter Property="FontSize" Value="15px"/>
+            <Setter Property="FontSize" Value="14px"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="FontFamily" Value="Segoe UI"/>
             <Setter Property="Template">
@@ -197,14 +197,14 @@
                     <ControlTemplate TargetType="Button">
                         <Grid>
                             <!--<ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>-->
-                            <Border BorderThickness="0,0,2,0" 
-                                BorderBrush="#222222" 
+                            <Border BorderThickness="0,0,1,0" 
+                                BorderBrush="#111" 
                                 Background="{TemplateBinding Background}">
                                 <StackPanel Orientation="Horizontal">
                                     <ContentControl x:Name="Icon" 
                                         Content="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"
-                                        Width="24" 
-                                        Height="24" 
+                                        Width="20" 
+                                        Height="20" 
                                         Margin="20,0,8,0"/>
                                     <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" 
                                                       VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
@@ -213,6 +213,7 @@
                             </Border>
                             <Rectangle x:Name="UnderlineRect" 
                                        Height="2" 
+                                       Margin="0px 0px 1px 0px"
                                        Fill="Transparent" 
                                        VerticalAlignment="Bottom"/>
                         </Grid>
@@ -221,7 +222,7 @@
             </Setter>
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#1FFFFFFF"/>
+                    <Setter Property="Background" Value="#0CD0E0FF"/>
                     <!-- 半透明の白色 -->
                 </Trigger>
                 <Trigger Property="IsPressed" Value="True">
@@ -230,30 +231,7 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
-        <Style x:Key="IconTextButtonStyle" TargetType="Button">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Padding" Value="8,4"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}"
-                        BorderBrush="{TemplateBinding BorderBrush}"
-                        BorderThickness="{TemplateBinding BorderThickness}">
-                            <StackPanel Orientation="Horizontal">
-                                <ContentControl x:Name="Icon" 
-                                        Content="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"
-                                        Width="24" 
-                                        Height="24" 
-                                        Margin="0,0,8,0"/>
-                                <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" 
-                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
-                            </StackPanel>
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
+        
     </Window.Resources>
 
     <WindowChrome.WindowChrome>
@@ -308,7 +286,9 @@
     <Grid Background="#181818" Margin="0,0,0,0">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="1"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="1"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <Menu Grid.Row="0">
@@ -339,8 +319,10 @@
                 <MenuItem Header="設定"/>
             </MenuItem>
         </Menu>
+        <!-- 境界線 -->
+        <Rectangle Grid.Row="1" Fill="#000"/>
         <!-- ナビゲーションメニュー -->
-        <StackPanel Grid.Row="1" Orientation="Horizontal" Background="#FF2D2D2D" Height="50" VerticalAlignment="Top">
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Background="#1a1c1e" Height="50" VerticalAlignment="Top">
             <Button Content="Editor"
                     x:Name="btnNavigateToEditor"
                     Click="NavigateButton_Click" 
@@ -360,8 +342,9 @@
                     WindowChrome.IsHitTestVisibleInChrome="True" 
                     Style="{StaticResource HeaderButtonStyle}"/>
         </StackPanel>
-
+        <!-- 境界線 -->
+        <Rectangle Grid.Row="3" Fill="#000"/>
         <!-- コンテンツを表示するためのFrame -->
-        <Frame Grid.Row="2" x:Name="MainFrame" NavigationUIVisibility="Hidden" Navigated="MainFrame_Navigated"/>
+        <Frame Grid.Row="4" x:Name="MainFrame" NavigationUIVisibility="Hidden" Navigated="MainFrame_Navigated"/>
     </Grid>
 </Window>

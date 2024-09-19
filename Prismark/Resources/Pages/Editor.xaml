@@ -6,6 +6,7 @@
       xmlns:local="clr-namespace:Prismark.Resources.Pages"
       xmlns:avalonEdit="http://icsharpcode.net/sharpdevelop/avalonedit"
       xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+      xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
       mc:Ignorable="d" 
       d:DesignHeight="450" d:DesignWidth="800"
       Title="Editor" Loaded="Page_Loaded">
@@ -35,10 +36,48 @@
             <Setter Property="Foreground" Value="#D4D4D4"/>
             <Setter Property="LineNumbersForeground" Value="#858585"/>
         </Style>
+        <Style x:Key="EditorIconButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#EEE"/>
+            <Setter Property="Width" Value="30px"/>
+            <Setter Property="Height" Value="30px"/>
+            <Setter Property="FontSize" Value="14px"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid>
+                            <Border BorderThickness="0,0,0,0" 
+                                BorderBrush="#111" 
+                                Background="{TemplateBinding Background}">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Left">
+                                    <ContentControl x:Name="Icon" 
+                            Content="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"
+                                    Width="18" 
+                                    Height="18" 
+                                    Margin="0,0,0,2"/>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#0CD0E0FF"/>
+                    <!-- 半透明の白色 -->
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="Background" Value="#3FFFFFFF"/>
+                    <!-- より濃い半透明の白色 -->
+                </Trigger>
+            </Style.Triggers>
+        </Style>
     </Page.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto" MinWidth="300" Name="LeftColumn"/>
+            <ColumnDefinition Width="Auto" MinWidth="250" Name="LeftColumn"/>
             <ColumnDefinition Width="1"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
@@ -76,8 +115,135 @@
                     <!-- 境界線 -->
                     <Rectangle Grid.Row="1" Width="1000" Fill="#333333"/>
                     
-                    
-                    <StackPanel Grid.Row="2"></StackPanel>
+                    <!-- エディターアイコン置き場 -->
+                    <StackPanel Grid.Row="2" Orientation="Horizontal"  HorizontalAlignment="Left">
+                        <Button Content="H1"
+                                x:Name="btnEditH1"
+                                ToolTip="見出し（大）"
+                                Tag="{StaticResource H1Icon}"
+                                Margin="10,-2,0,0"
+                                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditH1_Click"/>
+                        <Button Content="H2"
+                                x:Name="btnEditH2"
+                                ToolTip="見出し（中）"
+                                Tag="{StaticResource H2Icon}"
+                                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditH2_Click"/>
+                         <Button Content="H3"
+                                x:Name="btnEditH3"
+                                ToolTip="見出し（小）"
+                                Tag="{StaticResource H3Icon}"
+                                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditH3_Click"/>
+                        <Button Content="Bold"
+                                Margin="10,0,0,0"
+                                x:Name="btnEditBold"
+                                ToolTip="太字"
+                                Tag="{StaticResource BoldIcon}"
+                                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditBold_Click"/>
+                        <Button Content="italic"
+                                x:Name="btnEdititalic"
+                                ToolTip="斜体"
+                                Tag="{StaticResource ItalicIcon}"
+                                Style="{StaticResource EditorIconButtonStyle}" Click="btnEdititalic_Click"/>
+                        <Button Content="Underline"
+                                x:Name="btnEditUnderline"
+                                ToolTip="下線"
+                                Tag="{StaticResource UnderlineIcon}"
+                                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditUnderline_Click"/>
+                        <Button Content="Strikethrough"
+                                x:Name="btnEditStrikethrough"
+                                ToolTip="打ち消し線"
+                                Tag="{StaticResource StrikethroughIcon}"
+                                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditStrikethrough_Click"/>
+                        <Button Content="quote"
+                                x:Name="btnEditQuote"
+                                Tag="{StaticResource QuoteIcon}"
+                                ToolTip="引用"
+                                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditQuote_Click"/>
+                        <Button Content="code"
+                                x:Name="btnEditCode"
+                                Tag="{StaticResource CodeIcon}"
+                                ToolTip="コード"
+                                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditCode_Click"/>
+                        <Button Content="link"
+                                x:Name="btnEditLink"
+                                ToolTip="リンク"
+                                Tag="{StaticResource LinkIcon}"
+                                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditLink_Click"/>
+                        
+                        <Button Content="Color"
+                                x:Name="btnEditColor"
+                                ToolTip="文字を着色する"
+                                Tag="{StaticResource ColorIcon}"
+                                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditColor_Click"/>
+                        <TextBox x:Name="ColorTextBox" Width="60" Height="20" 
+                                 Background="#FF464646" Text="#000000" 
+                                 Foreground="White"  GotFocus="ColorTextBox_GotFocus"/>
+                        <!-- カラーピッカー用のポップアップ -->
+                        <Popup x:Name="ColorPickerPopup" PlacementTarget="{Binding ElementName=ColorTextBox}" Placement="Bottom" Opened="ColorPickerPopup_Opened">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <xctk:ColorCanvas x:Name="ColorCanvas" 
+                                      SelectedColorChanged="ColorCanvas_SelectedColorChanged"
+                                      Grid.Row="0"/>
+                                <ListBox x:Name="PredefinedColorsList" Grid.Row="1" 
+                                         SelectionChanged="PredefinedColorsList_SelectionChanged"
+                                         ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                                            <ListBox.ItemsPanel>
+                                                                <ItemsPanelTemplate>
+                                                                    <WrapPanel />
+                                                                </ItemsPanelTemplate>
+                                                            </ListBox.ItemsPanel>
+                                                            <ListBox.ItemTemplate>
+                                                                <DataTemplate>
+                                                                    <Border Width="20" Height="20" Margin="2" 
+                                                    Background="{Binding}" 
+                                                    ToolTip="{Binding}"/>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                                <Button Content="OK" Click="ColorOkButton_Click" 
+                                        Grid.Row="2" 
+                                        BorderThickness="0"
+                                        Background="#222"
+                                        HorizontalAlignment="Stretch" 
+                                        VerticalAlignment="Stretch"
+                                        Foreground="#FFF"
+                                        Margin="0,0,0,0">
+                                    <Button.Style>
+                                        <Style TargetType="Button">
+                                            <Style.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter Property="Background" Value="#444444"/>
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
+                            </Grid>
+                        </Popup>
+                        <Button Content="List"
+                                x:Name="btnEditList"
+                                Margin="20,0,0,0"
+                                ToolTip="箇条書きリスト"
+                                Tag="{StaticResource FormatListIcon}"
+                                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditList_Click"/>
+                        <Button Content="ListNum"
+                                x:Name="btnEditListNum"
+                                ToolTip="番号付きリスト"
+                                Tag="{StaticResource FormatListNumIcon}"
+                                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditListNum_Click"/>
+
+                        <Button Content="Image"
+                                x:Name="btnEditImage"
+                                Margin="10,0,0,0"
+                                ToolTip="画像"
+                                Tag="{StaticResource ImageIcon}"
+                                Style="{StaticResource EditorIconButtonStyle}"/>
+                    </StackPanel>
                 </Grid>
                 
             </StackPanel>
@@ -115,15 +281,18 @@
             </Grid>
             <!-- ステータスバー -->
             <StatusBar Grid.Row="3" Height="20" Foreground="#c4c4c4" Background="#1c1e21" VerticalAlignment="Bottom">
-                <StatusBarItem>
-                    <TextBlock Text="Ready"/>
+                <StatusBarItem >
+                    <TextBlock x:Name="Ready" Text="Ready"/>
                 </StatusBarItem>
                 <Separator/>
-                <StatusBarItem>
-                    <TextBlock Text="Words: 0"/>
+                <StatusBarItem >
+                    <TextBlock x:Name="Words" Text="Words: 0"/>
                 </StatusBarItem>
                 <StatusBarItem>
-                    <TextBlock Text="Lines: 0"/>
+                    <TextBlock x:Name="Lines" Text="Lines: 0"/>
+                </StatusBarItem>
+                <StatusBarItem>
+                    <TextBlock x:Name="Col" Text="Col: 0"/>
                 </StatusBarItem>
             </StatusBar>
         </Grid>
