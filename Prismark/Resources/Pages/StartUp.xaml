@@ -7,8 +7,80 @@
       mc:Ignorable="d" 
       d:DesignHeight="450" d:DesignWidth="800"
       Title="StartUp">
+    <Grid Background="#1c1e21">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="70"/>
+            <RowDefinition Height="40"/>
+            <RowDefinition Height="30"/>
+            <RowDefinition Height="30"/>
+            <RowDefinition Height="30"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="40"/>
+        </Grid.RowDefinitions>
+        <TextBlock Grid.Row="0" 
+                   FontWeight="Bold" 
+                   FontSize="40" 
+                   Text="Create New Document" 
+                   VerticalAlignment="Center"
+                   Margin="20,0,0,0"
+                   Foreground="#D6D6D6" FontFamily="Segoe UI"/>
+        <TextBlock Grid.Row="1" 
+                   FontWeight="Bold" 
+                   FontSize="20" 
+                   Text="新しいドキュメントの作成" 
+                   VerticalAlignment="Center"
+                   Margin="20,0,0,0"
+                   Foreground="#D6D6D6" FontFamily="Yu Gothic"/>
+        <StackPanel Grid.Row="2" Orientation="Horizontal"  HorizontalAlignment="Left"></StackPanel>
+        <StackPanel Grid.Row="3" Orientation="Horizontal"  HorizontalAlignment="Stretch">
+            <TextBlock Grid.Row="1"  
+                       FontSize="12" 
+                       Text="ドキュメント名" 
+                       VerticalAlignment="Center"
+                       Width="100"
+                       Margin="20,0,0,0"
+                       Foreground="#D6D6D6" FontFamily="Yu Gothic UI"/>
+            <TextBox x:Name="txtProjectName"
+                     Width="500px" 
+                     Background="#1c1e21"
+                     Margin="20,5,0,5"
+                     VerticalAlignment="Center"
+                     Foreground="#FFF"
+                     Text="NewDocument"
+                     Style="{StaticResource RoundedTextBox}">
+            </TextBox>
+            
+        </StackPanel>
 
-    <Grid>
-        
+        <StackPanel Grid.Row="4" Orientation="Horizontal"  HorizontalAlignment="Stretch">
+            <TextBlock Grid.Row="1"  
+                       FontSize="12" 
+                       Width="100"
+                       Text="作業フォルダ" 
+                       VerticalAlignment="Center"
+                       Margin="20,0,0,0"
+                       Foreground="#D6D6D6" FontFamily="Yu Gothic UI"/>
+            <TextBox x:Name="txtFolderPath"
+                     Width="500px" 
+                     IsEnabled="False"
+                     Margin="20,5,0,5"
+                     VerticalAlignment="Center"
+                     Foreground="#FFF"
+                     Style="{StaticResource RoundedTextBox}" Background="#19FFFFFF">
+
+            </TextBox>
+            <Button x:Name="btnBrowse"
+                    Width="30"
+                    Margin="5"
+                    VerticalAlignment="Center"
+                    Content="..." Background="#7FFFFFFF" Click="btnBrowse_Click"/>
+        </StackPanel>
+        <StackPanel Grid.Row="6" Orientation="Horizontal"  HorizontalAlignment="Right">
+            <Button x:Name="btnCreate"
+                    Width="60"
+                    Margin="0,5,20,5"
+                    VerticalAlignment="Center"
+                    Content="作成" Background="#7FFFFFFF"/>
+        </StackPanel>
     </Grid>
 </Page>

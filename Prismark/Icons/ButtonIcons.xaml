@@ -1,5 +1,13 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!--フォルダアイコン-->
+    <Viewbox x:Key="FolderIcon" x:Shared="False" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" Stretch="Uniform">
+        <Path Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Control}}">
+            <Path.Data>
+                <PathGeometry Figures="M10 4H2v16h20V6H12l-2-2z" FillRule="NonZero"/>
+            </Path.Data>
+        </Path>
+    </Viewbox>
     <!--リストアイコン-->
     <Viewbox x:Key="FormatListIcon" x:Shared="False" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" Stretch="Uniform">
         <Path Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Control}}">
@@ -168,6 +176,37 @@
                 <PathGeometry Figures="M12 2C6.49 2 2 6.49 2 12s4.49 10 10 10c1.38 0 2.5-1.12 2.5-2.5c0-0.61-0.23-1.2-0.64-1.67c-0.08-0.1-0.13-0.21-0.13-0.33 c0-0.28 0.22-0.5 0.5-0.5H16c3.31 0 6-2.69 6-6C22 6.04 17.51 2 12 2z M17.5 13c-0.83 0-1.5-0.67-1.5-1.5c0-0.83 0.67-1.5 1.5-1.5 s1.5 0.67 1.5 1.5C19 12.33 18.33 13 17.5 13z M14.5 9C13.67 9 13 8.33 13 7.5C13 6.67 13.67 6 14.5 6S16 6.67 16 7.5 C16 8.33 15.33 9 14.5 9z M5 11.5C5 10.67 5.67 10 6.5 10S8 10.67 8 11.5C8 12.33 7.33 13 6.5 13S5 12.33 5 11.5z M11 7.5 C11 8.33 10.33 9 9.5 9S8 8.33 8 7.5C8 6.67 8.67 6 9.5 6S11 6.67 11 7.5z" FillRule="NonZero"/>
             </Path.Data>
         </Path>
+    </Viewbox>
+    <!-- グリッドアイコン -->
+    <Viewbox x:Key="GridIcon" x:Shared="False" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" Stretch="Uniform">
+        <Path Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Control}}">
+            <Path.Data>
+                <PathGeometry Figures="M20 2H4c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM8 20H5c-.55 0-1-.45-1-1v-3h4v4zm0-6H4v-4h4v4zm0-6H4V5c0-.55.45-1 1-1h3v4zm6 12h-4v-4h4v4zm0-6h-4v-4h4v4zm0-6h-4V4h4v4zm5 12h-3v-4h4v3c0 .55-.45 1-1 1zm1-6h-4v-4h4v4zm0-6h-4V4h3c.55 0 1 .45 1 1v3z" FillRule="NonZero"/>
+            </Path.Data>
+        </Path>
+    </Viewbox>
+    <!-- 改行アイコン -->
+    <Viewbox x:Key="ParagraphIcon" x:Shared="False" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" Stretch="Uniform">
+        <Path Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Control}}">
+            <Path.Data>
+                <PathGeometry Figures="M15 20v-10q-3.458 0-5.896-2.438T6.667 1.667q0-3.459 2.437-5.896T15 -6.667h15v3.334h-3.333v23.333h-3.334V-3.333h-5v23.333H15Z" FillRule="NonZero"/>
+            </Path.Data>
+        </Path>
+    </Viewbox>
+    <!-- コードブロックアイコン -->
+    <Viewbox x:Key="CodeBlockIcon" x:Shared="False" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" Stretch="Uniform">
+        <Canvas Width="24" Height="24">
+            <Path Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Control}}">
+                <Path.Data>
+                    <PathGeometry Figures="M4 7v2c0 0.55-0.45 1-1 1H2v4h1c0.55 0 1 0.45 1 1v2c0 1.65 1.35 3 3 3h3v-2H7c-0.55 0-1-0.45-1-1v-2 c0-1.3-0.84-2.42-2-2.83v-0.34C5.16 11.42 6 10.3 6 9V7c0-0.55 0.45-1 1-1h3V4H7C5.35 4 4 5.35 4 7z" FillRule="NonZero"/>
+                </Path.Data>
+            </Path>
+            <Path Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Control}}">
+                <Path.Data>
+                    <PathGeometry Figures="M21 10c-0.55 0-1-0.45-1-1V7c0-1.65-1.35-3-3-3h-3v2h3c0.55 0 1 0.45 1 1v2c0 1.3 0.84 2.42 2 2.83v0.34 c-1.16 0.41-2 1.52-2 2.83v2c0 0.55-0.45 1-1 1h-3v2h3c1.65 0 3-1.35 3-3v-2c0-0.55 0.45-1 1-1h1v-4H21z" FillRule="NonZero"/>
+                </Path.Data>
+            </Path>
+        </Canvas>
     </Viewbox>
 
 </ResourceDictionary>

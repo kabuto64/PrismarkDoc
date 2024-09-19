@@ -24,6 +24,7 @@ using static System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox;
 using System.Windows.Controls.Primitives;
 using System.Windows.Forms;
 using static System.Net.Mime.MediaTypeNames;
+using ICSharpCode.AvalonEdit.Document;
 
 namespace Prismark.Resources.Pages
 {
@@ -152,6 +153,15 @@ namespace Prismark.Resources.Pages
             ApplyLineStartMarkdown("### ");
         }
         /// <summary>
+        /// 改行挿入
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void btnEditBreak_Click(object sender, RoutedEventArgs e)
+        {
+            ApplyInsertMarkdown("<br>");
+        }
+        /// <summary>
         /// 太字
         /// </summary>
         /// <param name="sender"></param>
@@ -241,6 +251,26 @@ namespace Prismark.Resources.Pages
         private void btnEditListNum_Click(object sender, RoutedEventArgs e)
         {
             ApplyLineStartMarkdown("x. ");
+        }
+        /// <summary>
+        /// グリッド挿入
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void btnEditGrid_Click(object sender, RoutedEventArgs e)
+        {
+            ApplyInsertMarkdownToNextLine($@"| 左揃え | 中央揃え | 右揃え |{Environment.NewLine}| :-- | :-: | --: |{Environment.NewLine}| * | * | * |");
+        }
+        /// <summary>
+        /// コードブロック挿入
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void btnEditCodeBlock_Click(object sender, RoutedEventArgs e)
+        {
+            ComboBoxItem item = (ComboBoxItem)cbxLanguage.SelectedItem;
+            string language = item.Tag as string;
+            ApplyStartEndMarkdown($"{Environment.NewLine}```{language}{Environment.NewLine}", $"{Environment.NewLine}```{Environment.NewLine}");
         }
         /// <summary>
         /// 選択範囲にマークダウン適用（前後に囲うタイプ）
@@ -363,6 +393,77 @@ namespace Prismark.Resources.Pages
             int newEndOffset = document.GetLineByNumber(endLine).EndOffset;
             MarkDownEditor.Select(newStartOffset, newEndOffset - newStartOffset);
         }
+        /// <summary>
+        /// 選択範囲（現在行）の次の行にマークダウンのテンプレートを挿入
+        /// </summary>
+        /// <param name="markdownTamplate"></param>
+        private void ApplyInsertMarkdownToNextLine(string markdownTamplate)
+        {
+            if (MarkDownEditor == null) return;
+
+            var document = MarkDownEditor.Document;
+            var selection = MarkDownEditor.TextArea.Selection;
+
+            if (selection.IsEmpty)
+            {
+                // 選択がない場合、カーソル位置にマークダウンを挿入
+                int offset = MarkDownEditor.CaretOffset;
+                int lineNumber = document.GetLineByOffset(offset).LineNumber;
+                // その行のTextLineオブジェクトを取得
+                DocumentLine line = document.GetLineByNumber(lineNumber);
+                offset = line.EndOffset;
+
+                document.Insert(offset, Environment.NewLine + markdownTamplate + Environment.NewLine);
+                MarkDownEditor.CaretOffset = offset + markdownTamplate.Length + 1;
+            }
+            else
+            {
+                int startOffset = document.GetOffset(selection.StartPosition.Location);
+                int endOffset = document.GetOffset(selection.EndPosition.Location);
+
+                if (startOffset > endOffset)
+                {
+                    (startOffset, endOffset) = (endOffset, startOffset);
+                }
+                int lineNumber = document.GetLineByOffset(endOffset).LineNumber;
+                // その行のTextLineオブジェクトを取得
+                DocumentLine line = document.GetLineByNumber(lineNumber);
+                endOffset = line.EndOffset;
+                document.Insert(endOffset, Environment.NewLine + markdownTamplate + Environment.NewLine);
+                MarkDownEditor.CaretOffset = endOffset + markdownTamplate.Length + 1;
+            }
+        }
+        /// <summary>
+        /// 選択範囲（現在位置）にマークダウンをを挿入
+        /// </summary>
+        /// <param name="markdownTamplate"></param>
+        private void ApplyInsertMarkdown(string markdownTamplate)
+        {
+            if (MarkDownEditor == null) return;
+
+            var document = MarkDownEditor.Document;
+            var selection = MarkDownEditor.TextArea.Selection;
+
+            if (selection.IsEmpty)
+            {
+                // 選択がない場合、カーソル位置にマークダウンを挿入
+                int offset = MarkDownEditor.CaretOffset;
+                document.Insert(offset, markdownTamplate);
+                MarkDownEditor.CaretOffset = offset + markdownTamplate.Length;
+            }
+            else
+            {
+                int startOffset = document.GetOffset(selection.StartPosition.Location);
+                int endOffset = document.GetOffset(selection.EndPosition.Location);
+
+                if (startOffset > endOffset)
+                {
+                    (startOffset, endOffset) = (endOffset, startOffset);
+                }
+                document.Insert(endOffset, markdownTamplate);
+                MarkDownEditor.CaretOffset = endOffset + markdownTamplate.Length;
+            }
+        }
         #endregion
 
 
@@ -400,6 +501,7 @@ namespace Prismark.Resources.Pages
                 ColorCanvas.SelectedColor = selectedBrush.Color;
             }
         }
+        
     }
    
 }

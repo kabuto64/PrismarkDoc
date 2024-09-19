@@ -117,9 +117,11 @@ namespace Prismark
             SetButtonUnderline(btnNavigateToEditor, false);
             SetButtonUnderline(btnNavigateToExport, false);
             SetButtonUnderline(btnNavigateToSetting, false);
+            SetButtonUnderline(btnNavigateToStartUp, false);
             btnNavigateToEditor.IsEnabled = true;
             btnNavigateToExport.IsEnabled = true;
             btnNavigateToSetting.IsEnabled = true;
+            btnNavigateToStartUp.IsEnabled = true;
 
             // 現在のページに対応するボタンをハイライト
             if (MainFrame.Content is Page currentPage)
@@ -192,15 +194,16 @@ namespace Prismark
 
         private void CreateShortcut()
         {
-            string shortcutPath = System.IO.Path.Combine(workingDirectory, "DocuForge.lnk");
+            string shortcutPath = System.IO.Path.Combine(workingDirectory, "ProjectName.lnk");
             string targetPath = Process.GetCurrentProcess().MainModule.FileName;
 
             WshShell shell = new WshShell();
             IWshShortcut shortcut = (IWshShortcut)shell.CreateShortcut(shortcutPath);
 
             shortcut.TargetPath = targetPath;
+            shortcut.Arguments = "--fromShortcut"; // コマンドライン引数を追加
             shortcut.WorkingDirectory = workingDirectory;
-            shortcut.Description = "DocuForge Shortcut";
+            shortcut.Description = "Prismark Shortcut";
             shortcut.Save();
         }
 

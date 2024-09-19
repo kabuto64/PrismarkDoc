@@ -341,6 +341,12 @@
                     Tag="{StaticResource SettingIcon}"
                     WindowChrome.IsHitTestVisibleInChrome="True" 
                     Style="{StaticResource HeaderButtonStyle}"/>
+            <Button Content="StartUp"
+                    x:Name="btnNavigateToStartUp"
+                    Click="NavigateButton_Click" 
+                    Tag="{StaticResource FolderIcon}"
+                    WindowChrome.IsHitTestVisibleInChrome="True" 
+                    Style="{StaticResource HeaderButtonStyle}"/>
         </StackPanel>
         <!-- 境界線 -->
         <Rectangle Grid.Row="3" Fill="#000"/>
