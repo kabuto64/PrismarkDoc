@@ -80,7 +80,7 @@
                     Width="60"
                     Margin="0,5,20,5"
                     VerticalAlignment="Center"
-                    Content="作成" Background="#7FFFFFFF"/>
+                    Content="作成" Background="#7FFFFFFF" Click="btnCreate_Click"/>
         </StackPanel>
     </Grid>
 </Page>
