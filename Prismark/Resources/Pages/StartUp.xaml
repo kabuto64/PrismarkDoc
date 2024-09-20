@@ -49,7 +49,7 @@
                      Text="NewDocument"
                      Style="{StaticResource RoundedTextBox}">
             </TextBox>
-            
+
         </StackPanel>
 
         <StackPanel Grid.Row="4" Orientation="Horizontal"  HorizontalAlignment="Stretch">

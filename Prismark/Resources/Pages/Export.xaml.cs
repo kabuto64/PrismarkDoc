@@ -20,6 +20,7 @@ namespace Prismark.Resources.Pages
     /// </summary>
     public partial class Export : Page
     {
+        private App _app = System.Windows.Application.Current as App;
         public Export()
         {
             InitializeComponent();

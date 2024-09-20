@@ -28,18 +28,32 @@ namespace Prismark
     /// </summary>
     public partial class MainWindow : Window
     {
-        private string _currentPage;
-        private string _currentProjectPath;
-
-        private string workingDirectory;
-
         private Dictionary<string, Page> _pageCache = new Dictionary<string, Page>();
+        private App _app = Application.Current as App;
         public MainWindow()
         {
             InitializeComponent();
             this.StateChanged += MainWindow_StateChanged;
 
-            //SelectWorkingDirectory();
+            bool isLaunchedFromShortcut = _app.IsLaunchedFromShortcut;
+            if (isLaunchedFromShortcut)
+            {
+                MainFrame.Navigate(new Resources.Pages.Editor());
+            }
+            else
+            {
+                string lastWorkingDir = ConfigurationManager.AppSettings["LastWorkingDirectory"];
+                if (string.IsNullOrEmpty(lastWorkingDir))
+                {
+                    MainFrame.Navigate(new Resources.Pages.StartUp());
+                }
+                else
+                {
+                    _app.WorkingFolder = lastWorkingDir;
+                    _app.ProjectName = System.IO.Path.GetFileName(lastWorkingDir);
+                    MainFrame.Navigate(new Resources.Pages.Editor());
+                }
+            }
         }
         private void MainWindow_StateChanged(object sender, EventArgs e)
         {
@@ -147,74 +161,5 @@ namespace Prismark
 
 
         #endregion
-
-
-        private void SelectWorkingDirectory()
-        {
-            // 前回の作業フォルダを取得
-            string lastWorkingDir = ConfigurationManager.AppSettings["LastWorkingDirectory"];
-
-            if (string.IsNullOrEmpty(lastWorkingDir) || !Directory.Exists(lastWorkingDir))
-            {
-                var dialog = new System.Windows.Forms.FolderBrowserDialog();
-                dialog.Description = "作業フォルダを選択してください";
-                dialog.ShowNewFolderButton = true;
-
-                if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-                {
-                    workingDirectory = dialog.SelectedPath;
-                }
-                else
-                {
-                    MessageBox.Show("作業フォルダが選択されていません。アプリケーションを終了します。");
-                    Application.Current.Shutdown();
-                    return;
-                }
-            }
-            else
-            {
-                workingDirectory = lastWorkingDir;
-            }
-
-            // 必要なフォルダを作成
-            CreateRequiredFolders();
-
-            // ショートカットを作成
-            CreateShortcut();
-
-            // 作業フォルダを設定ファイルに保存
-            SaveWorkingDirectory();
-        }
-
-        private void CreateRequiredFolders()
-        {
-            Directory.CreateDirectory(System.IO.Path.Combine(workingDirectory, "md"));
-            Directory.CreateDirectory(System.IO.Path.Combine(workingDirectory, "img"));
-        }
-
-        private void CreateShortcut()
-        {
-            string shortcutPath = System.IO.Path.Combine(workingDirectory, "ProjectName.lnk");
-            string targetPath = Process.GetCurrentProcess().MainModule.FileName;
-
-            WshShell shell = new WshShell();
-            IWshShortcut shortcut = (IWshShortcut)shell.CreateShortcut(shortcutPath);
-
-            shortcut.TargetPath = targetPath;
-            shortcut.Arguments = "--fromShortcut"; // コマンドライン引数を追加
-            shortcut.WorkingDirectory = workingDirectory;
-            shortcut.Description = "Prismark Shortcut";
-            shortcut.Save();
-        }
-
-        private void SaveWorkingDirectory()
-        {
-            Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
-            config.AppSettings.Settings["LastWorkingDirectory"].Value = workingDirectory;
-            config.Save(ConfigurationSaveMode.Modified);
-            ConfigurationManager.RefreshSection("appSettings");
-        }
-
-
     }
 }

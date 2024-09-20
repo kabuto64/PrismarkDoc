@@ -20,6 +20,7 @@ namespace Prismark.Resources.Pages
     /// </summary>
     public partial class Setting : Page
     {
+        private App _app = System.Windows.Application.Current as App;
         public Setting()
         {
             InitializeComponent();

@@ -209,7 +209,7 @@
                                     <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" 
                                                       VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
                                 </StackPanel>
-                                
+
                             </Border>
                             <Rectangle x:Name="UnderlineRect" 
                                        Height="2" 
@@ -231,7 +231,7 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
-        
+
     </Window.Resources>
 
     <WindowChrome.WindowChrome>
@@ -283,7 +283,7 @@
             </Border>
         </ControlTemplate>
     </Window.Template>
-    <Grid Background="#181818" Margin="0,0,0,0">
+    <Grid Background="#FF202226" Margin="0,0,0,0">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="1"/>
@@ -320,9 +320,9 @@
             </MenuItem>
         </Menu>
         <!-- 境界線 -->
-        <Rectangle Grid.Row="1" Fill="#000"/>
+        <Rectangle Grid.Row="1" Fill="#111"/>
         <!-- ナビゲーションメニュー -->
-        <StackPanel Grid.Row="2" Orientation="Horizontal" Background="#1a1c1e" Height="50" VerticalAlignment="Top">
+        <StackPanel Grid.Row="2" Orientation="Horizontal"  Height="50" VerticalAlignment="Top">
             <Button Content="Editor"
                     x:Name="btnNavigateToEditor"
                     Click="NavigateButton_Click" 
@@ -349,7 +349,7 @@
                     Style="{StaticResource HeaderButtonStyle}"/>
         </StackPanel>
         <!-- 境界線 -->
-        <Rectangle Grid.Row="3" Fill="#000"/>
+        <Rectangle Grid.Row="3" Fill="#111"/>
         <!-- コンテンツを表示するためのFrame -->
         <Frame Grid.Row="4" x:Name="MainFrame" NavigationUIVisibility="Hidden" Navigated="MainFrame_Navigated"/>
     </Grid>

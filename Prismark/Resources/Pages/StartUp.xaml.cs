@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -9,14 +7,15 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Documents;
-using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
-using System.Windows.Shapes;
-using IWshRuntimeLibrary;
 using Microsoft.WindowsAPICodePack.Dialogs;
+using System.Configuration;
+using System.IO;
+using IWshRuntimeLibrary;
+using System.Diagnostics;
 
 namespace Prismark.Resources.Pages
 {
@@ -25,14 +24,17 @@ namespace Prismark.Resources.Pages
     /// </summary>
     public partial class StartUp : Page
     {
-        public string WorkingFolder { get; private set; }
-        public string ProjectName { get; private set; }
-        public string ProjectPath { get; private set; }
+        private App _app = Application.Current as App;
         public StartUp()
         {
             InitializeComponent();
         }
 
+        /// <summary>
+        /// 参照ボタン
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void btnBrowse_Click(object sender, RoutedEventArgs e)
         {
             var dialog = new CommonOpenFileDialog
@@ -45,9 +47,66 @@ namespace Prismark.Resources.Pages
             if (dialog.ShowDialog() == CommonFileDialogResult.Ok)
             {
                 txtFolderPath.Text = dialog.FileName;
+                _app.WorkingFolder = dialog.FileName;
             }
         }
+        /// <summary>
+        /// 必要なフォルダを作業フォルダ内に作成
+        /// </summary>
+        private void CreateRequiredFolders()
+        {
+            Directory.CreateDirectory(System.IO.Path.Combine(_app.WorkingFolder, "md"));
+            Directory.CreateDirectory(System.IO.Path.Combine(_app.WorkingFolder, "img"));
+        }
+        /// <summary>
+        /// 作業フォルダにショートカットを作成
+        /// </summary>
+        private void CreateShortcut()
+        {
+            string shortcutPath = System.IO.Path.Combine(_app.WorkingFolder, $"{_app.ProjectName}.lnk");
+            string targetPath = Process.GetCurrentProcess().MainModule.FileName;
 
+            WshShell shell = new WshShell();
+            IWshShortcut shortcut = (IWshShortcut)shell.CreateShortcut(shortcutPath);
+
+            // コマンドライン引数を設定し、ショートカットから起動したときに自動的に作業フォルダを設定する。
+            shortcut.TargetPath = targetPath;
+            shortcut.Arguments = $"--project \"{_app.WorkingFolder}\"";
+            shortcut.WorkingDirectory = _app.WorkingFolder;
+            shortcut.Description = $"{_app.ProjectName} - Prismark Project";
+            shortcut.Save();
+        }
+        /// <summary>
+        /// 空のマークダウンファイルの作成
+        /// </summary>
+        private void CreateEmptyMarkdownFile()
+        {
+            // mdフォルダのパスを作成
+            string mdFolderPath = Path.Combine(_app.WorkingFolder, "md");
+
+            // mdフォルダが存在しない場合は作成
+            if (!Directory.Exists(mdFolderPath))
+            {
+                Directory.CreateDirectory(mdFolderPath);
+            }
+
+            int fileNumber = 1;
+            string fileName;
+            do
+            {
+                fileName = $"{fileNumber}.NewMarkdownFile.md";
+                fileNumber++;
+            } while (System.IO.File.Exists(Path.Combine(mdFolderPath, fileName)));
+
+            // 空のmdファイルを作成
+            string filePath = Path.Combine(mdFolderPath, fileName);
+            System.IO.File.WriteAllText(filePath, string.Empty);
+        }
+        /// <summary>
+        /// プロジェクト作成実行
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void btnCreate_Click(object sender, RoutedEventArgs e)
         {
             if (string.IsNullOrWhiteSpace(txtFolderPath.Text))
@@ -58,47 +117,35 @@ namespace Prismark.Resources.Pages
 
             if (string.IsNullOrWhiteSpace(txtProjectName.Text))
             {
-                System.Windows.MessageBox.Show("ドキュメント名を入力してください。", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                System.Windows.MessageBox.Show("プロジェクト名を入力してください。", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
-            WorkingFolder = txtFolderPath.Text;
-            ProjectName = txtProjectName.Text;
-
-            ProjectPath = System.IO.Path.Combine(WorkingFolder, ProjectName);
-
-            CreateRequiredFolders();
-            CreateShortcut();
+            string projectPath = System.IO.Path.Combine(txtFolderPath.Text, txtProjectName.Text);
 
             try
             {
-                Directory.CreateDirectory(ProjectPath);
-                System.Windows.MessageBox.Show($"プロジェクトフォルダの作成が完了しました", "完了", MessageBoxButton.OK, MessageBoxImage.Information);
+                Directory.CreateDirectory(projectPath);
+
             }
             catch (Exception ex)
             {
                 System.Windows.MessageBox.Show($"プロジェクトフォルダの作成中にエラーが発生しました: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
             }
-        }
-        private void CreateRequiredFolders()
-        {
-            Directory.CreateDirectory(System.IO.Path.Combine(ProjectPath, "md"));
-            Directory.CreateDirectory(System.IO.Path.Combine(ProjectPath, "img"));
-        }
 
-        private void CreateShortcut()
-        {
-            string shortcutPath = System.IO.Path.Combine(ProjectPath, $"{ProjectName}.lnk");
-            string targetPath = Process.GetCurrentProcess().MainModule.FileName;
+            _app.WorkingFolder = projectPath;
+            _app.ProjectName = txtProjectName.Text;
 
-            WshShell shell = new WshShell();
-            IWshShortcut shortcut = (IWshShortcut)shell.CreateShortcut(shortcutPath);
+            // 必要なフォルダを作成
+            CreateRequiredFolders();
+            // 空のmdファイルを作成
+            CreateEmptyMarkdownFile();
 
-            shortcut.TargetPath = targetPath;
-            shortcut.Arguments = $"--project \"{ProjectPath}\"";
-            shortcut.WorkingDirectory = ProjectPath;
-            shortcut.Description = $"{ProjectName} - DocuForge Project";
-            shortcut.Save();
+            // ショートカットを作成
+            CreateShortcut();
+
+            // エディター画面へ移動
+            NavigationService.Navigate(new Editor());
         }
 
     }

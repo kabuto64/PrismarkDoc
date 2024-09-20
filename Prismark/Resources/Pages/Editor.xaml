@@ -74,35 +74,126 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
+        <Style x:Key="MdFileButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#EEE"/>
+            <Setter Property="Height" Value="40px"/>
+            <Setter Property="FontSize" Value="12px"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid>
+                            <Border BorderThickness="0,1,0,1" 
+                                BorderBrush="#333" 
+                                Background="{TemplateBinding Background}">
+                                <StackPanel Orientation="Horizontal">
+                                    <ContentControl x:Name="State" 
+                                        Content="{StaticResource DoneIcon}"
+                                        Width="15" 
+                                        Height="15" 
+                                        Margin="10,-3,0,0"/>
+                                    <ContentControl x:Name="Icon" 
+                                        Content="{StaticResource DocumentIcon}"
+                                        Width="20" 
+                                        Height="20" 
+                                        Margin="5,-3,8,0"/>
+                                    <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" 
+                                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                </StackPanel>
+                            </Border>
+                            <Rectangle x:Name="UnderlineRect" 
+                                       Height="2" 
+                                       Margin="0px 0px 1px 0px"
+                                       Fill="Transparent" 
+                                       VerticalAlignment="Bottom"/>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="local:ButtonProperties.IsModified" Value="True">
+                                <Setter TargetName="State" Property="Content" Value="{StaticResource UnsavedIcon}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#0CD0E0FF"/>
+                    <!-- 半透明の白色 -->
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="Background" Value="#3FFFFFFF"/>
+                    <!-- より濃い半透明の白色 -->
+                </Trigger>
+            </Style.Triggers>
+        </Style>
     </Page.Resources>
-    <Grid>
+    <Grid Background="#FF202226">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto" MinWidth="250" Name="LeftColumn"/>
             <ColumnDefinition Width="1"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
         <!-- Left Menu -->
-        <Grid Grid.Column="0"  Background="#1c1e21">
+        <Grid Grid.Column="0">
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="29"/>
+                <RowDefinition Height="40"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
-            <StackPanel Grid.Row="1"  Margin="10">
-                <TextBlock Text="Menu" FontWeight="Bold" Margin="0,0,0,10" Foreground="White"/>
+            <StackPanel Grid.Row="0" Orientation="Horizontal"  Margin="10,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Left">
+                <TextBlock x:Name="txtProjectName" 
+                           Text="Undefined" 
+                           FontFamily="Segoe UI" 
+                           FontSize="15" 
+                           FontWeight="Bold" 
+                           Width="150"
+                           VerticalAlignment="Center"
+                           Foreground="White"/>
             </StackPanel>
-            
+            <StackPanel Grid.Row="1" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right">
+                <Button Content="Add"
+                                x:Name="btnNewMdFile"
+                                ToolTip="新規マークダウン"
+                                Tag="{StaticResource NewDocIcon}"
+                                Style="{StaticResource EditorIconButtonStyle}" Click="AddNewFile"/>
+                <Button Content="Add"
+                                x:Name="btnAllSave"
+                                ToolTip="すべてのファイルを保存"
+                                Tag="{StaticResource SaveAllIcon}"
+                                Style="{StaticResource EditorIconButtonStyle}"/>
+                <!--<Button Content="Add"
+                                x:Name="btnSoatAlpha"
+                                ToolTip="ソート：名前順"
+                                Tag="{StaticResource SortByAlphaIcon}"
+                                Style="{StaticResource EditorIconButtonStyle}"/>
+                <Button Content="Add"
+                                x:Name="btnSoatUpdateDate"
+                                ToolTip="ソート：更新日時"
+                                Tag="{StaticResource SortByDateIcon}"
+                                Style="{StaticResource EditorIconButtonStyle}"/>-->
+                <Button Content="Reload"
+                                x:Name="btnFileListReload"
+                                ToolTip="最新の情報に更新"
+                                Tag="{StaticResource ReloadIcon}"
+                                Style="{StaticResource EditorIconButtonStyle}"/>
+            </StackPanel>
+            <StackPanel x:Name="pnlMdFiles" Grid.Row="2">
+            </StackPanel>
         </Grid>
         <!-- 境界線 -->
         <Rectangle Grid.Column="1" Fill="#333333"/>
         <!-- Main Content -->
-        <Grid Grid.Column="2" Background="White">
+        <Grid Grid.Column="2">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="1"/>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
-            <StackPanel Grid.Row="0" Orientation="Horizontal" Background="#1c1e21"  Height="90" VerticalAlignment="Top">
+            <StackPanel Grid.Row="0" Orientation="Horizontal" Height="100" VerticalAlignment="Top">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
@@ -110,11 +201,12 @@
                         <RowDefinition Height="30"/>
                     </Grid.RowDefinitions>
                     <StackPanel Grid.Row="0"  Margin="10">
-                        <TextBlock Text="DocmentName" FontFamily="Segoe UI" FontSize="24" FontWeight="Bold" Margin="0,0,0,10" Foreground="White"/>
+                        <TextBlock x:Name="txtMdFileName" Text="Undefined" FontFamily="Segoe UI" FontSize="24" FontWeight="Bold" Margin="0,0,0,10" Foreground="White"/>
                     </StackPanel>
                     <!-- 境界線 -->
-                    <Rectangle Grid.Row="1" Width="1000" Fill="#333333"/>
-                    
+                    <!-- 境界線 -->
+                    <Border Grid.Row="1" Height="1" Width="9999"  Background="#333333" VerticalAlignment="Top"/>
+
                     <!-- エディターアイコン置き場 -->
                     <StackPanel Grid.Row="2" Orientation="Horizontal"  HorizontalAlignment="Left">
                         <Button Content="H1"
@@ -128,7 +220,7 @@
                                 ToolTip="見出し（中）"
                                 Tag="{StaticResource H2Icon}"
                                 Style="{StaticResource EditorIconButtonStyle}" Click="btnEditH2_Click"/>
-                         <Button Content="H3"
+                        <Button Content="H3"
                                 x:Name="btnEditH3"
                                 ToolTip="見出し（小）"
                                 Tag="{StaticResource H3Icon}"
@@ -180,7 +272,7 @@
                                 Margin="0,0,0,0"
                                 ToolTip="画像の挿入"
                                 Tag="{StaticResource ImageIcon}"
-                                Style="{StaticResource EditorIconButtonStyle}"/>
+                                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditImage_Click"/>
                         <Button Content="Color"
                                 x:Name="btnEditColor"
                                 ToolTip="文字を着色する"
@@ -203,14 +295,14 @@
                                 <ListBox x:Name="PredefinedColorsList" Grid.Row="1" 
                                          SelectionChanged="PredefinedColorsList_SelectionChanged"
                                          ScrollViewer.HorizontalScrollBarVisibility="Disabled">
-                                                            <ListBox.ItemsPanel>
-                                                                <ItemsPanelTemplate>
-                                                                    <WrapPanel />
-                                                                </ItemsPanelTemplate>
-                                                            </ListBox.ItemsPanel>
-                                                            <ListBox.ItemTemplate>
-                                                                <DataTemplate>
-                                                                    <Border Width="20" Height="20" Margin="2" 
+                                    <ListBox.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <WrapPanel />
+                                        </ItemsPanelTemplate>
+                                    </ListBox.ItemsPanel>
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Width="20" Height="20" Margin="2" 
                                                     Background="{Binding}" 
                                                     ToolTip="{Binding}"/>
                                         </DataTemplate>
@@ -312,19 +404,19 @@
                                                             Margin="3,3,23,3" 
                                                             VerticalAlignment="Center" 
                                                             HorizontalAlignment="Left" />
-                                                                            <Popup 
+                                                    <Popup 
                                                             Name="Popup" 
                                                             Placement="Bottom" 
                                                             IsOpen="{TemplateBinding IsDropDownOpen}" 
                                                             AllowsTransparency="True"  
                                                             Focusable="False" 
                                                             PopupAnimation="Slide">
-                                                                                <Grid 
+                                                        <Grid 
                                                                 Name="DropDown" 
                                                                 SnapsToDevicePixels="True" 
                                                                 MinWidth="{TemplateBinding ActualWidth}" 
                                                                 MaxHeight="{TemplateBinding MaxDropDownHeight}">
-                                                                                    <Border 
+                                                            <Border 
                                                                     x:Name="DropDownBorder" 
                                                                     Background="#222" 
                                                                     BorderThickness="1" 
@@ -365,7 +457,7 @@
                         </ComboBox>
                     </StackPanel>
                 </Grid>
-                
+
             </StackPanel>
             <!-- 境界線 -->
             <Rectangle Grid.Row="1" Fill="#333333"/>
@@ -375,6 +467,7 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="5"/>
                     <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="10"/>
                 </Grid.ColumnDefinitions>
 
                 <!-- Markdownエディター -->
@@ -397,7 +490,8 @@
                 <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" Background="#242424" Cursor="SizeWE"/>
 
                 <!-- プレビュー -->
-                <wv2:WebView2 Grid.Column="2" x:Name="webView" />
+                <wv2:WebView2 Grid.Column="2" x:Name="webView" Margin="0,0,0,0" />
+                <Rectangle Grid.Column="3" Fill="#1c1e21"/>
             </Grid>
             <!-- ステータスバー -->
             <StatusBar Grid.Row="3" Height="20" Foreground="#c4c4c4" Background="#1c1e21" VerticalAlignment="Bottom">
