@@ -8,8 +8,16 @@
       xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
       xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
       mc:Ignorable="d" 
-      d:DesignHeight="450" d:DesignWidth="800"
+      d:DesignHeight="450"
       Title="Editor" Loaded="Page_Loaded">
+    <Page.CommandBindings>
+        <CommandBinding Command="Undo" Executed="UndoCommandBinding_Executed"/>
+        <CommandBinding Command="Redo" Executed="RedoCommandBinding_Executed"/>
+    </Page.CommandBindings>
+    <Page.InputBindings>
+        <KeyBinding Key="Z" Modifiers="Control" Command="Undo"/>
+        <KeyBinding Key="Y" Modifiers="Control" Command="Redo"/>
+    </Page.InputBindings>
     <Page.Resources>
         <Storyboard x:Key="OpenMenu">
             <DoubleAnimation 
@@ -34,59 +42,58 @@
         <Style TargetType="{x:Type avalonEdit:TextEditor}">
             <Setter Property="Background" Value="#1E1E1E"/>
             <Setter Property="Foreground" Value="#D4D4D4"/>
-            <Setter Property="LineNumbersForeground" Value="#858585"/>
+            <Setter Property="LineNumbersForeground" Value="#FFA7BCC7"/>
         </Style>
         <Style x:Key="EditorIconButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="#EEE"/>
-            <Setter Property="Width" Value="30px"/>
-            <Setter Property="Height" Value="30px"/>
-            <Setter Property="FontSize" Value="14px"/>
+            <Setter Property="Foreground" Value="#FF95A0A7"/>
+            <Setter Property="Width" Value="30"/>
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="FontSize" Value="14"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="FontFamily" Value="Segoe UI"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Grid>
-                            <Border BorderThickness="0,0,0,0" 
-                                BorderBrush="#111" 
-                                Background="{TemplateBinding Background}">
+                            <Border x:Name="ButtonBorder"
+                            BorderThickness="0" 
+                            BorderBrush="#111" 
+                            Background="{TemplateBinding Background}">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Left">
                                     <ContentControl x:Name="Icon" 
-                            Content="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"
-                                    Width="18" 
-                                    Height="18" 
-                                    Margin="0,0,0,2"/>
+                                Content="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"
+                                Foreground="{TemplateBinding Foreground}"
+                                Width="18" 
+                                Height="18" 
+                                Margin="0,0,0,2"/>
                                 </StackPanel>
                             </Border>
                         </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Icon" Property="Foreground" Value="#FFF"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled"  Value="False">
+                                <Setter TargetName="Icon" Property="Foreground" Value="#FF3F4652"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#0CD0E0FF"/>
-                    <!-- 半透明の白色 -->
-                </Trigger>
-                <Trigger Property="IsPressed" Value="True">
-                    <Setter Property="Background" Value="#3FFFFFFF"/>
-                    <!-- より濃い半透明の白色 -->
-                </Trigger>
-            </Style.Triggers>
         </Style>
         <Style x:Key="MdFileButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="#EEE"/>
-            <Setter Property="Height" Value="40px"/>
+            <Setter Property="Height" Value="30px"/>
             <Setter Property="FontSize" Value="12px"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="FontFamily" Value="Segoe UI"/>
-            <Setter Property="HorizontalAlignment" Value="Stretch" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Grid>
-                            <Border BorderThickness="0,1,0,1" 
+                            <Border BorderThickness="0,0,0,1" 
                                 BorderBrush="#333" 
                                 Background="{TemplateBinding Background}">
                                 <StackPanel Orientation="Horizontal">
@@ -100,15 +107,16 @@
                                         Width="20" 
                                         Height="20" 
                                         Margin="5,-3,8,0"/>
-                                    <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" 
-                                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                    <TextBlock Text="{TemplateBinding Content}"
+                                       HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                       VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
                                 </StackPanel>
                             </Border>
-                            <Rectangle x:Name="UnderlineRect" 
-                                       Height="2" 
-                                       Margin="0px 0px 1px 0px"
+                            <Rectangle x:Name="LeftLineRect" 
+                                       Width="7" 
+                                       Margin="0px 0px 0px 0px"
                                        Fill="Transparent" 
-                                       VerticalAlignment="Bottom"/>
+                                       HorizontalAlignment="Left"/>
                         </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="local:ButtonProperties.IsModified" Value="True">
@@ -132,7 +140,7 @@
     </Page.Resources>
     <Grid Background="#FF202226">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto" MinWidth="250" Name="LeftColumn"/>
+            <ColumnDefinition Width="Auto" MaxWidth="250" Name="LeftColumn"/>
             <ColumnDefinition Width="1"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
@@ -141,6 +149,7 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="29"/>
                 <RowDefinition Height="40"/>
+                <RowDefinition Height="1"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
             <StackPanel Grid.Row="0" Orientation="Horizontal"  Margin="10,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Left">
@@ -164,24 +173,18 @@
                                 ToolTip="すべてのファイルを保存"
                                 Tag="{StaticResource SaveAllIcon}"
                                 Style="{StaticResource EditorIconButtonStyle}"/>
-                <!--<Button Content="Add"
-                                x:Name="btnSoatAlpha"
-                                ToolTip="ソート：名前順"
-                                Tag="{StaticResource SortByAlphaIcon}"
-                                Style="{StaticResource EditorIconButtonStyle}"/>
-                <Button Content="Add"
-                                x:Name="btnSoatUpdateDate"
-                                ToolTip="ソート：更新日時"
-                                Tag="{StaticResource SortByDateIcon}"
-                                Style="{StaticResource EditorIconButtonStyle}"/>-->
                 <Button Content="Reload"
                                 x:Name="btnFileListReload"
                                 ToolTip="最新の情報に更新"
                                 Tag="{StaticResource ReloadIcon}"
                                 Style="{StaticResource EditorIconButtonStyle}"/>
             </StackPanel>
-            <StackPanel x:Name="pnlMdFiles" Grid.Row="2">
-            </StackPanel>
+            <Rectangle Grid.Row="2" Fill="#333333"/>
+            <ScrollViewer Grid.Row="3" MaxWidth="250" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+                <StackPanel x:Name="pnlMdFiles" >
+                </StackPanel>
+            </ScrollViewer>
+            
         </Grid>
         <!-- 境界線 -->
         <Rectangle Grid.Column="1" Fill="#333333"/>
@@ -193,272 +196,281 @@
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
-            <StackPanel Grid.Row="0" Orientation="Horizontal" Height="100" VerticalAlignment="Top">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="1"/>
-                        <RowDefinition Height="30"/>
-                    </Grid.RowDefinitions>
-                    <StackPanel Grid.Row="0"  Margin="10">
-                        <TextBlock x:Name="txtMdFileName" Text="Undefined" FontFamily="Segoe UI" FontSize="24" FontWeight="Bold" Margin="0,0,0,10" Foreground="White"/>
-                    </StackPanel>
-                    <!-- 境界線 -->
-                    <!-- 境界線 -->
-                    <Border Grid.Row="1" Height="1" Width="9999"  Background="#333333" VerticalAlignment="Top"/>
+            <Grid Grid.Row="0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="69"/>
+                    <RowDefinition Height="1"/>
+                    <RowDefinition Height="30"/>
+                </Grid.RowDefinitions>
+                <StackPanel Grid.Row="0"  Margin="10">
+                    <TextBlock x:Name="txtMdFileName" Text="Undefined" FontFamily="Segoe UI" FontSize="24" FontWeight="Bold" Margin="0,0,0,10" Foreground="White"/>
+                </StackPanel>
+                <!-- 境界線 -->
+                <Border Grid.Row="1" Background="#333333"/>
+                <!-- エディターアイコン置き場 -->
+                <StackPanel Grid.Row="2" Orientation="Horizontal"  HorizontalAlignment="Left">
+                    <Button Content="Undo"
+                x:Name="btnUndo"
+                ToolTip="元に戻す"
+                Tag="{StaticResource UndoIcon}"
+                Margin="10,-2,0,0"
+                Style="{StaticResource EditorIconButtonStyle}" Click="btnUndo_Click"/>
+                    <Button Content="Redo"
+                x:Name="btnRedo"
+                ToolTip="やり直し"
+                Tag="{StaticResource RedoIcon}"
+                Margin="0,-2,0,0"
+                Style="{StaticResource EditorIconButtonStyle}" Click="btnRedo_Click" />
+                    <Button Content="H1"
+                x:Name="btnEditH1"
+                ToolTip="見出し（大）"
+                Tag="{StaticResource H1Icon}"
+                Margin="10,-2,0,0"
+                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditH1_Click"/>
+                    <Button Content="H2"
+                x:Name="btnEditH2"
+                ToolTip="見出し（中）"
+                Tag="{StaticResource H2Icon}"
+                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditH2_Click"/>
+                    <Button Content="H3"
+                x:Name="btnEditH3"
+                ToolTip="見出し（小）"
+                Tag="{StaticResource H3Icon}"
+                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditH3_Click"/>
+                    <Button Content="Break"
+                Margin="10,4,0,0"
+                x:Name="btnEditBreak"
+                ToolTip="改行"
+                Tag="{StaticResource ParagraphIcon}"
+                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditBreak_Click"/>
+                    <Button Content="Bold"
+                Margin="10,0,0,0"
+                x:Name="btnEditBold"
+                ToolTip="太字"
+                Tag="{StaticResource BoldIcon}"
+                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditBold_Click"/>
+                    <Button Content="italic"
+                x:Name="btnEdititalic"
+                ToolTip="斜体"
+                Tag="{StaticResource ItalicIcon}"
+                Style="{StaticResource EditorIconButtonStyle}" Click="btnEdititalic_Click"/>
+                    <Button Content="Underline"
+                x:Name="btnEditUnderline"
+                ToolTip="下線"
+                Tag="{StaticResource UnderlineIcon}"
+                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditUnderline_Click"/>
+                    <Button Content="Strikethrough"
+                x:Name="btnEditStrikethrough"
+                ToolTip="打ち消し線"
+                Tag="{StaticResource StrikethroughIcon}"
+                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditStrikethrough_Click"/>
+                    <Button Content="quote"
+                x:Name="btnEditQuote"
+                Tag="{StaticResource QuoteIcon}"
+                ToolTip="引用"
+                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditQuote_Click"/>
+                    <Button Content="code"
+                x:Name="btnEditCode"
+                Tag="{StaticResource CodeIcon}"
+                ToolTip="コード"
+                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditCode_Click"/>
+                    <Button Content="link"
+                x:Name="btnEditLink"
+                ToolTip="リンク"
+                Tag="{StaticResource LinkIcon}"
+                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditLink_Click"/>
+                    <Button Content="Image"
+                x:Name="btnEditImage"
+                Margin="0,0,0,0"
+                ToolTip="画像の挿入"
+                Tag="{StaticResource ImageIcon}"
+                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditImage_Click"/>
+                    <Button Content="Color"
+                x:Name="btnEditColor"
+                ToolTip="文字を着色する"
+                Tag="{StaticResource ColorIcon}"
+                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditColor_Click"/>
+                    <TextBox x:Name="ColorTextBox" Width="60" Height="20" 
+                 Background="#FF464646" Text="#000000" 
+                 Foreground="White"  GotFocus="ColorTextBox_GotFocus"/>
+                    <!-- カラーピッカー用のポップアップ -->
+                    <Popup x:Name="ColorPickerPopup" PlacementTarget="{Binding ElementName=ColorTextBox}" Placement="Bottom" Opened="ColorPickerPopup_Opened">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="30"/>
+                            </Grid.RowDefinitions>
+                            <xctk:ColorCanvas x:Name="ColorCanvas" 
+                                              Background="#FFF"
+                      SelectedColorChanged="ColorCanvas_SelectedColorChanged"
+                      Grid.Row="0"/>
+                            <ListBox x:Name="PredefinedColorsList" Grid.Row="1" 
+                         SelectionChanged="PredefinedColorsList_SelectionChanged"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                <ListBox.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel />
+                                    </ItemsPanelTemplate>
+                                </ListBox.ItemsPanel>
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Width="20" Height="20" Margin="2" 
+                                    Background="{Binding}" 
+                                    ToolTip="{Binding}"/>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                            <Button Content="OK" Click="ColorOkButton_Click" 
+                        Grid.Row="2" 
+                        BorderThickness="0"
+                        Background="#FFB5C0C7"
+                        HorizontalAlignment="Stretch" 
+                        VerticalAlignment="Stretch"
+                        Foreground="#FFF"
+                        Margin="0,0,0,0">
+                                <Button.Style>
+                                    <Style TargetType="Button">
+                                        <Style.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter Property="Background" Value="#444444"/>
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                        </Grid>
+                    </Popup>
+                    <Button Content="List"
+                x:Name="btnEditList"
+                Margin="20,0,0,0"
+                ToolTip="箇条書きリスト"
+                Tag="{StaticResource FormatListIcon}"
+                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditList_Click"/>
+                    <Button Content="ListNum"
+                x:Name="btnEditListNum"
+                ToolTip="番号付きリスト"
+                Tag="{StaticResource FormatListNumIcon}"
+                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditListNum_Click"/>
+                    <Button Content="Grid"
+                x:Name="btnEditGrid"
+                ToolTip="テーブルの挿入"
+                Tag="{StaticResource GridIcon}"
+                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditGrid_Click"/>
+                    <Button Content="Color"
+                x:Name="btnEditCodeBlock"
+                ToolTip="コードブロック"
+                Tag="{StaticResource CodeBlockIcon}"
+                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditCodeBlock_Click"/>
+                    <ComboBox Width="120" SelectedIndex="0"
+                  Height="24" 
+                  x:Name="cbxLanguage"
+                  HorizontalAlignment="Stretch" 
+                  VerticalAlignment="Stretch"
+                  Background="#222"
+                  Foreground="#FFF">
+                        <ComboBox.Style>
+                            <Style TargetType="{x:Type ComboBox}">
+                                <Setter Property="Background" Value="#222"/>
+                                <Setter Property="Foreground" Value="#222"/>
+                                <Setter Property="BorderBrush" Value="#ccc"/>
+                                <Setter Property="BorderThickness" Value="1"/>
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="{x:Type ComboBox}">
+                                            <Grid>
+                                                <ToggleButton 
+                                        Name="ToggleButton" 
+                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                        Background="{TemplateBinding Background}"
+                                        Foreground="{TemplateBinding Foreground}"
+                                        BorderThickness="{TemplateBinding BorderThickness}"
+                                        IsChecked="{Binding Path=IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
+                                        Focusable="false">
+                                                    <ToggleButton.Style>
+                                                        <Style TargetType="{x:Type ToggleButton}">
+                                                            <Setter Property="Template">
+                                                                <Setter.Value>
+                                                                    <ControlTemplate TargetType="{x:Type ToggleButton}">
+                                                                        <Border x:Name="Border" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
+                                                                            <Grid>
+                                                                                <Grid.ColumnDefinitions>
+                                                                                    <ColumnDefinition Width="*"/>
+                                                                                    <ColumnDefinition Width="20"/>
+                                                                                </Grid.ColumnDefinitions>
+                                                                                <ContentPresenter Grid.Column="0" Margin="3" VerticalAlignment="Center" HorizontalAlignment="Left" />
+                                                                                <Path x:Name="Arrow" Grid.Column="1" Fill="{TemplateBinding Foreground}" HorizontalAlignment="Center" VerticalAlignment="Center" Data="M 0 0 L 4 4 L 8 0 Z"/>
+                                                                            </Grid>
+                                                                        </Border>
+                                                                    </ControlTemplate>
+                                                                </Setter.Value>
+                                                            </Setter>
+                                                        </Style>
+                                                    </ToggleButton.Style>
+                                                </ToggleButton>
+                                                <ContentPresenter 
+                                            Name="ContentSite" 
+                                            IsHitTestVisible="False"  
+                                            Content="{TemplateBinding SelectionBoxItem}" 
+                                            ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" 
+                                            ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}" 
+                                            Margin="3,3,23,3" 
+                                            VerticalAlignment="Center" 
+                                            HorizontalAlignment="Left" />
+                                                <Popup 
+                                            Name="Popup" 
+                                            Placement="Bottom" 
+                                            IsOpen="{TemplateBinding IsDropDownOpen}" 
+                                            AllowsTransparency="True"  
+                                            Focusable="False" 
+                                            PopupAnimation="Slide">
+                                                    <Grid 
+                                                Name="DropDown" 
+                                                SnapsToDevicePixels="True" 
+                                                MinWidth="{TemplateBinding ActualWidth}" 
+                                                MaxHeight="{TemplateBinding MaxDropDownHeight}">
+                                                        <Border 
+                                                    x:Name="DropDownBorder" 
+                                                    Background="#222" 
+                                                    BorderThickness="1" 
+                                                    BorderBrush="#ccc"/>
+                                                        <ScrollViewer Margin="4,6,4,6" SnapsToDevicePixels="True">
+                                                            <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Contained" />
+                                                        </ScrollViewer>
+                                                    </Grid>
+                                                </Popup>
+                                            </Grid>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </ComboBox.Style>
+                        <ComboBoxItem Content="Plain Text" Tag="plaintext"/>
+                        <ComboBoxItem Content="JavaScript" Tag="javascript"/>
+                        <ComboBoxItem Content="Python" Tag="python"/>
+                        <ComboBoxItem Content="Java" Tag="java"/>
+                        <ComboBoxItem Content="C#" Tag="csharp"/>
+                        <ComboBoxItem Content="C++" Tag="cpp"/>
+                        <ComboBoxItem Content="Ruby" Tag="ruby"/>
+                        <ComboBoxItem Content="PHP" Tag="php"/>
+                        <ComboBoxItem Content="HTML" Tag="html"/>
+                        <ComboBoxItem Content="CSS" Tag="css"/>
+                        <ComboBoxItem Content="SQL" Tag="sql"/>
+                        <ComboBoxItem Content="XML" Tag="xml"/>
+                        <ComboBoxItem Content="Shell" Tag="shell"/>
+                        <ComboBoxItem Content="Markdown" Tag="markdown"/>
+                        <ComboBoxItem Content="JSON" Tag="json"/>
+                        <ComboBoxItem Content="YAML" Tag="yaml"/>
+                        <ComboBoxItem Content="TypeScript" Tag="typescript"/>
+                        <ComboBoxItem Content="Go" Tag="go"/>
+                        <ComboBoxItem Content="Rust" Tag="rust"/>
+                        <ComboBoxItem Content="Swift" Tag="swift"/>
+                        <ComboBoxItem Content="Kotlin" Tag="kotlin"/>
+                        <ComboBoxItem Content="R" Tag="r"/>
+                    </ComboBox>
+                </StackPanel>
+            </Grid>
 
-                    <!-- エディターアイコン置き場 -->
-                    <StackPanel Grid.Row="2" Orientation="Horizontal"  HorizontalAlignment="Left">
-                        <Button Content="H1"
-                                x:Name="btnEditH1"
-                                ToolTip="見出し（大）"
-                                Tag="{StaticResource H1Icon}"
-                                Margin="10,-2,0,0"
-                                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditH1_Click"/>
-                        <Button Content="H2"
-                                x:Name="btnEditH2"
-                                ToolTip="見出し（中）"
-                                Tag="{StaticResource H2Icon}"
-                                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditH2_Click"/>
-                        <Button Content="H3"
-                                x:Name="btnEditH3"
-                                ToolTip="見出し（小）"
-                                Tag="{StaticResource H3Icon}"
-                                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditH3_Click"/>
-                        <Button Content="Break"
-                                Margin="10,4,0,0"
-                                x:Name="btnEditBreak"
-                                ToolTip="改行"
-                                Tag="{StaticResource ParagraphIcon}"
-                                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditBreak_Click"/>
-                        <Button Content="Bold"
-                                Margin="10,0,0,0"
-                                x:Name="btnEditBold"
-                                ToolTip="太字"
-                                Tag="{StaticResource BoldIcon}"
-                                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditBold_Click"/>
-                        <Button Content="italic"
-                                x:Name="btnEdititalic"
-                                ToolTip="斜体"
-                                Tag="{StaticResource ItalicIcon}"
-                                Style="{StaticResource EditorIconButtonStyle}" Click="btnEdititalic_Click"/>
-                        <Button Content="Underline"
-                                x:Name="btnEditUnderline"
-                                ToolTip="下線"
-                                Tag="{StaticResource UnderlineIcon}"
-                                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditUnderline_Click"/>
-                        <Button Content="Strikethrough"
-                                x:Name="btnEditStrikethrough"
-                                ToolTip="打ち消し線"
-                                Tag="{StaticResource StrikethroughIcon}"
-                                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditStrikethrough_Click"/>
-                        <Button Content="quote"
-                                x:Name="btnEditQuote"
-                                Tag="{StaticResource QuoteIcon}"
-                                ToolTip="引用"
-                                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditQuote_Click"/>
-                        <Button Content="code"
-                                x:Name="btnEditCode"
-                                Tag="{StaticResource CodeIcon}"
-                                ToolTip="コード"
-                                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditCode_Click"/>
-                        <Button Content="link"
-                                x:Name="btnEditLink"
-                                ToolTip="リンク"
-                                Tag="{StaticResource LinkIcon}"
-                                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditLink_Click"/>
-                        <Button Content="Image"
-                                x:Name="btnEditImage"
-                                Margin="0,0,0,0"
-                                ToolTip="画像の挿入"
-                                Tag="{StaticResource ImageIcon}"
-                                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditImage_Click"/>
-                        <Button Content="Color"
-                                x:Name="btnEditColor"
-                                ToolTip="文字を着色する"
-                                Tag="{StaticResource ColorIcon}"
-                                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditColor_Click"/>
-                        <TextBox x:Name="ColorTextBox" Width="60" Height="20" 
-                                 Background="#FF464646" Text="#000000" 
-                                 Foreground="White"  GotFocus="ColorTextBox_GotFocus"/>
-                        <!-- カラーピッカー用のポップアップ -->
-                        <Popup x:Name="ColorPickerPopup" PlacementTarget="{Binding ElementName=ColorTextBox}" Placement="Bottom" Opened="ColorPickerPopup_Opened">
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="*"/>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                </Grid.RowDefinitions>
-                                <xctk:ColorCanvas x:Name="ColorCanvas" 
-                                      SelectedColorChanged="ColorCanvas_SelectedColorChanged"
-                                      Grid.Row="0"/>
-                                <ListBox x:Name="PredefinedColorsList" Grid.Row="1" 
-                                         SelectionChanged="PredefinedColorsList_SelectionChanged"
-                                         ScrollViewer.HorizontalScrollBarVisibility="Disabled">
-                                    <ListBox.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <WrapPanel />
-                                        </ItemsPanelTemplate>
-                                    </ListBox.ItemsPanel>
-                                    <ListBox.ItemTemplate>
-                                        <DataTemplate>
-                                            <Border Width="20" Height="20" Margin="2" 
-                                                    Background="{Binding}" 
-                                                    ToolTip="{Binding}"/>
-                                        </DataTemplate>
-                                    </ListBox.ItemTemplate>
-                                </ListBox>
-                                <Button Content="OK" Click="ColorOkButton_Click" 
-                                        Grid.Row="2" 
-                                        BorderThickness="0"
-                                        Background="#222"
-                                        HorizontalAlignment="Stretch" 
-                                        VerticalAlignment="Stretch"
-                                        Foreground="#FFF"
-                                        Margin="0,0,0,0">
-                                    <Button.Style>
-                                        <Style TargetType="Button">
-                                            <Style.Triggers>
-                                                <Trigger Property="IsMouseOver" Value="True">
-                                                    <Setter Property="Background" Value="#444444"/>
-                                                </Trigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Button.Style>
-                                </Button>
-                            </Grid>
-                        </Popup>
-                        <Button Content="List"
-                                x:Name="btnEditList"
-                                Margin="20,0,0,0"
-                                ToolTip="箇条書きリスト"
-                                Tag="{StaticResource FormatListIcon}"
-                                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditList_Click"/>
-                        <Button Content="ListNum"
-                                x:Name="btnEditListNum"
-                                ToolTip="番号付きリスト"
-                                Tag="{StaticResource FormatListNumIcon}"
-                                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditListNum_Click"/>
-                        <Button Content="Grid"
-                                x:Name="btnEditGrid"
-                                ToolTip="テーブルの挿入"
-                                Tag="{StaticResource GridIcon}"
-                                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditGrid_Click"/>
-                        <Button Content="Color"
-                                x:Name="btnEditCodeBlock"
-                                ToolTip="コードブロック"
-                                Tag="{StaticResource CodeBlockIcon}"
-                                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditCodeBlock_Click"/>
-                        <ComboBox Width="120" SelectedIndex="0"
-                                  Height="24" 
-                                  x:Name="cbxLanguage"
-                                  HorizontalAlignment="Stretch" 
-                                  VerticalAlignment="Stretch"
-                                  Background="#222"
-                                  Foreground="#FFF">
-                            <ComboBox.Style>
-                                <Style TargetType="{x:Type ComboBox}">
-                                    <Setter Property="Background" Value="#222"/>
-                                    <Setter Property="Foreground" Value="#222"/>
-                                    <Setter Property="BorderBrush" Value="#ccc"/>
-                                    <Setter Property="BorderThickness" Value="1"/>
-                                    <Setter Property="Template">
-                                        <Setter.Value>
-                                            <ControlTemplate TargetType="{x:Type ComboBox}">
-                                                <Grid>
-                                                    <ToggleButton 
-                                                        Name="ToggleButton" 
-                                                        BorderBrush="{TemplateBinding BorderBrush}"
-                                                        Background="{TemplateBinding Background}"
-                                                        Foreground="{TemplateBinding Foreground}"
-                                                        BorderThickness="{TemplateBinding BorderThickness}"
-                                                        IsChecked="{Binding Path=IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
-                                                        Focusable="false">
-                                                        <ToggleButton.Style>
-                                                            <Style TargetType="{x:Type ToggleButton}">
-                                                                <Setter Property="Template">
-                                                                    <Setter.Value>
-                                                                        <ControlTemplate TargetType="{x:Type ToggleButton}">
-                                                                            <Border x:Name="Border" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
-                                                                                <Grid>
-                                                                                    <Grid.ColumnDefinitions>
-                                                                                        <ColumnDefinition Width="*"/>
-                                                                                        <ColumnDefinition Width="20"/>
-                                                                                    </Grid.ColumnDefinitions>
-                                                                                    <ContentPresenter Grid.Column="0" Margin="3" VerticalAlignment="Center" HorizontalAlignment="Left" />
-                                                                                    <Path x:Name="Arrow" Grid.Column="1" Fill="{TemplateBinding Foreground}" HorizontalAlignment="Center" VerticalAlignment="Center" Data="M 0 0 L 4 4 L 8 0 Z"/>
-                                                                                </Grid>
-                                                                            </Border>
-                                                                        </ControlTemplate>
-                                                                    </Setter.Value>
-                                                                </Setter>
-                                                            </Style>
-                                                        </ToggleButton.Style>
-                                                    </ToggleButton>
-                                                    <ContentPresenter 
-                                                            Name="ContentSite" 
-                                                            IsHitTestVisible="False"  
-                                                            Content="{TemplateBinding SelectionBoxItem}" 
-                                                            ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" 
-                                                            ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}" 
-                                                            Margin="3,3,23,3" 
-                                                            VerticalAlignment="Center" 
-                                                            HorizontalAlignment="Left" />
-                                                    <Popup 
-                                                            Name="Popup" 
-                                                            Placement="Bottom" 
-                                                            IsOpen="{TemplateBinding IsDropDownOpen}" 
-                                                            AllowsTransparency="True"  
-                                                            Focusable="False" 
-                                                            PopupAnimation="Slide">
-                                                        <Grid 
-                                                                Name="DropDown" 
-                                                                SnapsToDevicePixels="True" 
-                                                                MinWidth="{TemplateBinding ActualWidth}" 
-                                                                MaxHeight="{TemplateBinding MaxDropDownHeight}">
-                                                            <Border 
-                                                                    x:Name="DropDownBorder" 
-                                                                    Background="#222" 
-                                                                    BorderThickness="1" 
-                                                                    BorderBrush="#ccc"/>
-                                                            <ScrollViewer Margin="4,6,4,6" SnapsToDevicePixels="True">
-                                                                <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Contained" />
-                                                            </ScrollViewer>
-                                                        </Grid>
-                                                    </Popup>
-                                                </Grid>
-                                            </ControlTemplate>
-                                        </Setter.Value>
-                                    </Setter>
-                                </Style>
-                            </ComboBox.Style>
-                            <ComboBoxItem Content="Plain Text" Tag="plaintext"/>
-                            <ComboBoxItem Content="JavaScript" Tag="javascript"/>
-                            <ComboBoxItem Content="Python" Tag="python"/>
-                            <ComboBoxItem Content="Java" Tag="java"/>
-                            <ComboBoxItem Content="C#" Tag="csharp"/>
-                            <ComboBoxItem Content="C++" Tag="cpp"/>
-                            <ComboBoxItem Content="Ruby" Tag="ruby"/>
-                            <ComboBoxItem Content="PHP" Tag="php"/>
-                            <ComboBoxItem Content="HTML" Tag="html"/>
-                            <ComboBoxItem Content="CSS" Tag="css"/>
-                            <ComboBoxItem Content="SQL" Tag="sql"/>
-                            <ComboBoxItem Content="XML" Tag="xml"/>
-                            <ComboBoxItem Content="Shell" Tag="shell"/>
-                            <ComboBoxItem Content="Markdown" Tag="markdown"/>
-                            <ComboBoxItem Content="JSON" Tag="json"/>
-                            <ComboBoxItem Content="YAML" Tag="yaml"/>
-                            <ComboBoxItem Content="TypeScript" Tag="typescript"/>
-                            <ComboBoxItem Content="Go" Tag="go"/>
-                            <ComboBoxItem Content="Rust" Tag="rust"/>
-                            <ComboBoxItem Content="Swift" Tag="swift"/>
-                            <ComboBoxItem Content="Kotlin" Tag="kotlin"/>
-                            <ComboBoxItem Content="R" Tag="r"/>
-                        </ComboBox>
-                    </StackPanel>
-                </Grid>
-
-            </StackPanel>
             <!-- 境界線 -->
             <Rectangle Grid.Row="1" Fill="#333333"/>
             <!-- 他のナビゲーションボタンを追加 -->
@@ -477,7 +489,7 @@
                     SyntaxHighlighting="C#"
                     FontFamily="Consolas"
                     FontSize="10pt"
-                    ShowLineNumbers="True" TextChanged="MarkDownEditor_TextChanged">
+                    ShowLineNumbers="True" TextChanged="MarkDownEditor_TextChanged" PreviewKeyDown="MarkDownEditor_PreviewKeyDown">
                     <avalonEdit:TextEditor.Options>
                         <avalonEdit:TextEditorOptions
                             EnableHyperlinks="True"

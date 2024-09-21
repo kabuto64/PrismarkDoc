@@ -38,20 +38,23 @@ namespace Prismark
             bool isLaunchedFromShortcut = _app.IsLaunchedFromShortcut;
             if (isLaunchedFromShortcut)
             {
-                MainFrame.Navigate(new Resources.Pages.Editor());
+                //MainFrame.Navigate(new Resources.Pages.Editor());
+                NavigateButton_Click(btnNavigateToEditor, new RoutedEventArgs());
             }
             else
             {
                 string lastWorkingDir = ConfigurationManager.AppSettings["LastWorkingDirectory"];
                 if (string.IsNullOrEmpty(lastWorkingDir))
                 {
-                    MainFrame.Navigate(new Resources.Pages.StartUp());
+                    //MainFrame.Navigate(new Resources.Pages.StartUp());
+                    NavigateButton_Click(btnNavigateToStartUp, new RoutedEventArgs());
                 }
                 else
                 {
                     _app.WorkingFolder = lastWorkingDir;
                     _app.ProjectName = System.IO.Path.GetFileName(lastWorkingDir);
-                    MainFrame.Navigate(new Resources.Pages.Editor());
+                    //MainFrame.Navigate(new Resources.Pages.Editor());
+                    NavigateButton_Click(btnNavigateToEditor, new RoutedEventArgs());
                 }
             }
         }

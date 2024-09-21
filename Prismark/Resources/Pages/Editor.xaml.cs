@@ -25,6 +25,7 @@ using System.Windows.Controls.Primitives;
 using static System.Net.Mime.MediaTypeNames;
 using ICSharpCode.AvalonEdit.Document;
 using Microsoft.WindowsAPICodePack.Dialogs;
+using Prismark.Utils;
 
 namespace Prismark.Resources.Pages
 {
@@ -45,6 +46,8 @@ namespace Prismark.Resources.Pages
 
         private List<Color> _predefinedColors;
         private App _app = System.Windows.Application.Current as App;
+
+        private UndoRedoManager undoRedoManager = new UndoRedoManager();
 
         public Editor()
         {
@@ -80,12 +83,13 @@ namespace Prismark.Resources.Pages
         }
         private void Page_Loaded(object sender, RoutedEventArgs e)
         {
-            //InitializeFirstFile();
+            
         }
         async void InitializeAsync()
         {
             await webView.EnsureCoreWebView2Async(null);
             PreviewShow();
+            InitializeFirstFile();
         }
         /// <summary>
         /// カラーピッカーのデフォルトカラー
@@ -113,6 +117,7 @@ namespace Prismark.Resources.Pages
                 System.Windows.MessageBox.Show("表示可能なファイルがありません。");
             }
         }
+
         #region ファイル操作関連（ファイルボタンボタン生成も含む）
         /// <summary>
         /// mdフォルダ内のmdファイル分、ボタンを生成する
@@ -147,7 +152,15 @@ namespace Prismark.Resources.Pages
                 Tag = filePath
             };
             ButtonProperties.SetIsModified(button, false);  // 初期状態では未変更
-            button.Click += (sender, e) => SwitchFile((string)((Button)sender).Tag);
+            //button.Click += (sender, e) => SwitchFile((string)((Button)sender).Tag);
+            button.Click += (sender, e) => { 
+                SwitchFile((string)((Button)sender).Tag);
+                foreach(var item in fileButtons)
+                {
+                    SetButtonLeftline(item, false);
+                }
+                SetButtonLeftline(button, true);
+            };
 
             fileButtons.Add(button);
         }
@@ -166,6 +179,10 @@ namespace Prismark.Resources.Pages
                     fileContents[_currentFilePath] = MarkDownEditor.Text;
                 }
 
+                _currentFilePath = newFilePath;
+                //Undo Redo
+                undoRedoManager.SetCurrentFile(newFilePath); // 現在のファイルを設定
+
                 // 新しいファイルの内容を読み込む
                 if (fileContents.ContainsKey(newFilePath))
                 {
@@ -176,9 +193,12 @@ namespace Prismark.Resources.Pages
                 {
                     // そうでなければ、ファイルから表示
                     LoadFileContent(newFilePath);
+                    // ファイル読み込み後に初期状態を設定
+                    undoRedoManager.SetInitialState(MarkDownEditor.Text, MarkDownEditor.CaretOffset);
                 }
+                
+                UpdateUndoRedoButtons();
 
-                _currentFilePath = newFilePath;
                 txtMdFileName.Text = $"{System.IO.Path.GetFileNameWithoutExtension(newFilePath)}";
             }
             finally
@@ -302,6 +322,18 @@ namespace Prismark.Resources.Pages
                 pnlMdFiles.Children.Add(button);
             }
         }
+        private void SetButtonLeftline(Button button, bool isHighlighted)
+        {
+            if (button.Template.FindName("LeftLineRect", button) is Rectangle leftline)
+            {
+                Color color = (Color)ColorConverter.ConvertFromString("#0295ff");
+                SolidColorBrush brush = new SolidColorBrush(color);
+                leftline.Fill = isHighlighted ? brush : Brushes.Transparent;
+            }
+            //Color backColor = (Color)ColorConverter.ConvertFromString("#1DFFFFFF");
+            //SolidColorBrush backColorBrush = new SolidColorBrush(backColor);
+            //button.Background = isHighlighted ? backColorBrush : Brushes.Transparent;
+        }
         #endregion
 
 
@@ -324,7 +356,13 @@ namespace Prismark.Resources.Pages
             if (_currentFilePath != null && !_isSwitchingTextChanged)
             {
                 UpdateFileButtonState(_currentFilePath, true);
+                undoRedoManager.RecordState(MarkDownEditor.Text, MarkDownEditor.CaretOffset);
             }
+            if(File.ReadAllText(_currentFilePath) == MarkDownEditor.Text)
+            {
+                UpdateFileButtonState(_currentFilePath, false);
+            }
+            UpdateUndoRedoButtons();
         }
         private void Caret_PositionChanged(object sender, EventArgs e)
         {
@@ -615,6 +653,11 @@ namespace Prismark.Resources.Pages
             int startLine = selection.IsEmpty ? MarkDownEditor.TextArea.Caret.Line : selection.StartPosition.Line;
             int endLine = selection.IsEmpty ? startLine : selection.EndPosition.Line;
 
+            if (startLine > endLine)
+            {
+                (startLine, endLine) = (endLine, startLine);
+            }
+
             document.BeginUpdate();
 
             for (int line = startLine; line <= endLine; line++)
@@ -760,6 +803,105 @@ namespace Prismark.Resources.Pages
             }
         }
 
+        /// <summary>
+        /// 元に戻すボタン押下時
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void btnUndo_Click(object sender, RoutedEventArgs e)
+        {
+            Undo();
+        }
+        /// <summary>
+        /// やり直しボタン押下時
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void btnRedo_Click(object sender, RoutedEventArgs e)
+        {
+            Redo();
+        }
+        /// <summary>
+        /// 元に戻す（Undo）実行
+        /// ファイルごとにUndo　Redoの情報を保持
+        /// </summary>
+        private void Undo()
+        {
+            var result = undoRedoManager.Undo();
+            if (result.HasValue)
+            {
+                _isSwitchingTextChanged = true;
+                MarkDownEditor.Text = result.Value.Text;
+                MarkDownEditor.CaretOffset = result.Value.CaretPosition;
+                _isSwitchingTextChanged = false;
+                UpdateFileButtonState(_currentFilePath, File.ReadAllText(_currentFilePath) != MarkDownEditor.Text);
+                UpdateUndoRedoButtons();
+            }
+        }
+        /// <summary>
+        /// やり直し（Redo）実行
+        /// ファイルごとにUndo　Redoの情報を保持
+        /// </summary>
+        private void Redo()
+        {
+            var result = undoRedoManager.Redo();
+            if (result.HasValue)
+            {
+                _isSwitchingTextChanged = true;
+                MarkDownEditor.Text = result.Value.Text;
+                MarkDownEditor.CaretOffset = result.Value.CaretPosition;
+                _isSwitchingTextChanged = false;
+                UpdateFileButtonState(_currentFilePath, File.ReadAllText(_currentFilePath) != MarkDownEditor.Text);
+                UpdateUndoRedoButtons();
+            }
+        }
+        
+        private void UpdateUndoRedoButtons()
+        {
+            btnUndo.IsEnabled = undoRedoManager.CanUndo();
+            btnRedo.IsEnabled = undoRedoManager.CanRedo();
+        }
+
+        private void UndoCommandBinding_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            if (btnUndo.IsEnabled)
+            {
+                Undo();
+            }
+
+            e.Handled = true; // イベントが処理されたことを示す
+        }
+
+
+        private void RedoCommandBinding_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            if (btnRedo.IsEnabled)
+            {
+                Redo();
+            }
+            e.Handled = true; // イベントが処理されたことを示す
+        }
+
+        private void MarkDownEditor_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Z && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+            {
+                if (btnUndo.IsEnabled)
+                {
+                    Undo();
+                }
+
+                e.Handled = true; // イベントが処理されたことを示す
+            }
+            if (e.Key == Key.Y && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+            {
+                if (btnRedo.IsEnabled)
+            {
+                Redo();
+            }
+            e.Handled = true; // イベントが処理されたことを示す
+            }
+        }
     }
 
     public static class ButtonProperties
