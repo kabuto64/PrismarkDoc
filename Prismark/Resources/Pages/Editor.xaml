@@ -137,10 +137,50 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
+        <Style x:Key="TextRenameButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#EEE"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid>
+                            <Border BorderThickness="0" 
+                                BorderBrush="Transparent" 
+                                Background="{TemplateBinding Background}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{TemplateBinding Content}"
+                                               FontSize="{TemplateBinding FontSize}"
+                                               
+                                       HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                       VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                    <ContentControl x:Name="Icon" 
+                                                    Content="{StaticResource EditIcon}"
+                                                    FontSize="{TemplateBinding FontSize}"
+                                                    Visibility="Hidden"
+                                                    Margin="5,-3,8,0"/>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Icon" Property="Visibility" Value="Visible"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Foreground" Value="#CCC"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
     </Page.Resources>
     <Grid Background="#FF202226">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto" MaxWidth="250" Name="LeftColumn"/>
+            <ColumnDefinition Width="250" MaxWidth="250" Name="LeftColumn"/>
             <ColumnDefinition Width="1"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
@@ -167,17 +207,23 @@
                                 x:Name="btnNewMdFile"
                                 ToolTip="新規マークダウン"
                                 Tag="{StaticResource NewDocIcon}"
+                                KeyboardNavigation.AcceptsReturn="False"
                                 Style="{StaticResource EditorIconButtonStyle}" Click="AddNewFile"/>
                 <Button Content="Add"
                                 x:Name="btnAllSave"
                                 ToolTip="すべてのファイルを保存"
                                 Tag="{StaticResource SaveAllIcon}"
-                                Style="{StaticResource EditorIconButtonStyle}"/>
-                <Button Content="Reload"
-                                x:Name="btnFileListReload"
-                                ToolTip="最新の情報に更新"
+                                Style="{StaticResource EditorIconButtonStyle}" Click="btnAllSave_Click" />
+                <Button Content="BrowseDirectry"
+                                x:Name="btnBrowseDirectry"
+                                ToolTip="ファイルの場所を開く"
+                                Tag="{StaticResource FolderIcon}"
+                                Style="{StaticResource EditorIconButtonStyle}" Click="btnBrowseDirectry_Click"/>
+                <Button Content="Refresh"
+                                x:Name="btnAllRefresh"
+                                ToolTip="プロジェクト全体をリフレッシュ"
                                 Tag="{StaticResource ReloadIcon}"
-                                Style="{StaticResource EditorIconButtonStyle}"/>
+                                Style="{StaticResource EditorIconButtonStyle}" Click="btnAllRefresh_Click" />
             </StackPanel>
             <Rectangle Grid.Row="2" Fill="#333333"/>
             <ScrollViewer Grid.Row="3" MaxWidth="250" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
@@ -203,12 +249,23 @@
                     <RowDefinition Height="30"/>
                 </Grid.RowDefinitions>
                 <StackPanel Grid.Row="0"  Margin="10">
-                    <TextBlock x:Name="txtMdFileName" Text="Undefined" FontFamily="Segoe UI" FontSize="24" FontWeight="Bold" Margin="0,0,0,10" Foreground="White"/>
+                    <Button x:Name="btnFileName"  Style="{StaticResource TextRenameButtonStyle}" 
+                            Content="Undefined" 
+                            FontSize="24" 
+                            KeyboardNavigation.AcceptsReturn="False"
+                            Click="btnFileName_Click"/>
+                    <!--<TextBlock x:Name="txtMdFileName" Text="Undefined" FontFamily="Segoe UI" FontSize="24" FontWeight="Bold" Margin="0,0,0,10" Foreground="White"/>-->
                 </StackPanel>
                 <!-- 境界線 -->
                 <Border Grid.Row="1" Background="#333333"/>
                 <!-- エディターアイコン置き場 -->
                 <StackPanel Grid.Row="2" Orientation="Horizontal"  HorizontalAlignment="Left">
+                    <Button Content="Undo"
+                x:Name="btnSave"
+                ToolTip="保存"
+                Tag="{StaticResource SaveIcon}"
+                Margin="10,-2,0,0"
+                Style="{StaticResource EditorIconButtonStyle}" Click="btnSave_Click"/>
                     <Button Content="Undo"
                 x:Name="btnUndo"
                 ToolTip="元に戻す"
@@ -221,6 +278,18 @@
                 Tag="{StaticResource RedoIcon}"
                 Margin="0,-2,0,0"
                 Style="{StaticResource EditorIconButtonStyle}" Click="btnRedo_Click" />
+                    <Button Content="Break"
+                Margin="10,4,0,0"
+                x:Name="btnEditBreak"
+                ToolTip="改行"
+                Tag="{StaticResource ReturnIcon}"
+                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditBreak_Click"/>
+                    <Button Content="Paragraph"
+                Margin="0,5,0,0"
+                x:Name="btnEditParagraph"
+                ToolTip="段落"
+                Tag="{StaticResource ParagraphIcon}"
+                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditParagraph_Click"/>
                     <Button Content="H1"
                 x:Name="btnEditH1"
                 ToolTip="見出し（大）"
@@ -237,12 +306,6 @@
                 ToolTip="見出し（小）"
                 Tag="{StaticResource H3Icon}"
                 Style="{StaticResource EditorIconButtonStyle}" Click="btnEditH3_Click"/>
-                    <Button Content="Break"
-                Margin="10,4,0,0"
-                x:Name="btnEditBreak"
-                ToolTip="改行"
-                Tag="{StaticResource ParagraphIcon}"
-                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditBreak_Click"/>
                     <Button Content="Bold"
                 Margin="10,0,0,0"
                 x:Name="btnEditBold"
@@ -468,6 +531,7 @@
                         <ComboBoxItem Content="Kotlin" Tag="kotlin"/>
                         <ComboBoxItem Content="R" Tag="r"/>
                     </ComboBox>
+                    
                 </StackPanel>
             </Grid>
 

@@ -10,7 +10,7 @@
         AllowsTransparency="True"
         Background="Transparent"
         ResizeMode="CanResizeWithGrip"
-        Title="Prismark Doc" Height="768" Width="1280">
+        Title="Prismark Doc" Height="768" Width="1280" MinWidth="1280" Loaded="Window_Loaded">
     <Window.Resources>
         <Style x:Key="TitleBarButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
@@ -240,9 +240,6 @@
     <Window.Template>
         <ControlTemplate TargetType="{x:Type Window}">
             <Border BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
-                <Border.Effect>
-                    <DropShadowEffect BlurRadius="15" ShadowDepth="0" Opacity="0.5" Color="Black"/>
-                </Border.Effect>
                 <Grid Background="{TemplateBinding Background}" Margin="-1,-1,-2,0">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="32"/>
@@ -339,12 +336,6 @@
                     x:Name="btnNavigateToSetting"
                     Click="NavigateButton_Click" 
                     Tag="{StaticResource SettingIcon}"
-                    WindowChrome.IsHitTestVisibleInChrome="True" 
-                    Style="{StaticResource HeaderButtonStyle}"/>
-            <Button Content="StartUp"
-                    x:Name="btnNavigateToStartUp"
-                    Click="NavigateButton_Click" 
-                    Tag="{StaticResource FolderIcon}"
                     WindowChrome.IsHitTestVisibleInChrome="True" 
                     Style="{StaticResource HeaderButtonStyle}"/>
         </StackPanel>

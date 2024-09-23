@@ -1,0 +1,26 @@
+﻿<local:DialogBase x:Class="Prismark.Resources.Modal.FileNameInputDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Prismark.Utils"
+        mc:Ignorable="d"
+        Height="170" Width="400">
+    <Grid Background="Transparent">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="40"/>
+            <RowDefinition Height="40"/>
+        </Grid.RowDefinitions>
+        <TextBlock VerticalAlignment="Bottom" FontSize="14" Text="新しいファイル名を入力" FontWeight="SemiBold" Foreground="#FFF"/>
+        <TextBox x:Name="txtAddFileName" Grid.Row="1" 
+                 Width="325" Height="30" 
+                 Style="{StaticResource CustomTextBoxStyle}"
+                 Padding="-20,0,0,0" FontSize="16" 
+                 Text="NewPage"
+                 HorizontalAlignment="Left" 
+                 VerticalContentAlignment="Center" 
+                 PreviewKeyDown="txtAddFileName_PreviewKeyDown"/>
+        <Button Grid.Row="2" Content="OK" HorizontalAlignment="Right" Click="Button_Click"  Style="{StaticResource CustromButtonStyle}"/>
+    </Grid>
+</local:DialogBase>

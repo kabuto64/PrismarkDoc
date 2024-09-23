@@ -18,14 +18,12 @@ using System.Xml;
 using ICSharpCode.AvalonEdit;
 using ICSharpCode.AvalonEdit.Highlighting.Xshd;
 using ICSharpCode.AvalonEdit.Highlighting;
-using Markdig;
-using Xceed.Wpf.Toolkit;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox;
-using System.Windows.Controls.Primitives;
-using static System.Net.Mime.MediaTypeNames;
 using ICSharpCode.AvalonEdit.Document;
 using Microsoft.WindowsAPICodePack.Dialogs;
 using Prismark.Utils;
+using System.Net.Http;
+using System.Diagnostics;
+using System.Threading;
 
 namespace Prismark.Resources.Pages
 {
@@ -34,6 +32,7 @@ namespace Prismark.Resources.Pages
     /// </summary>
     public partial class Editor : Page
     {
+        #region フィールド変数
         private string _currentFilePath;
 
         private bool _isSwitchingTextChanged = false;
@@ -49,10 +48,12 @@ namespace Prismark.Resources.Pages
 
         private UndoRedoManager undoRedoManager = new UndoRedoManager();
 
+        #endregion
+
+
         public Editor()
         {
             InitializeComponent();
-            InitializeAsync();
 
             // シンタックスハイライト定義ファイルを読み込む
             var assembly = Assembly.GetExecutingAssembly();
@@ -80,6 +81,8 @@ namespace Prismark.Resources.Pages
 
             // mdファイルを参照して、ボタンを配置する
             CreateFileButtons();
+
+            InitializeAsync();
         }
         private void Page_Loaded(object sender, RoutedEventArgs e)
         {
@@ -87,9 +90,22 @@ namespace Prismark.Resources.Pages
         }
         async void InitializeAsync()
         {
-            await webView.EnsureCoreWebView2Async(null);
-            PreviewShow();
-            InitializeFirstFile();
+            try
+            {
+                if (_app.LocalHttpServer == null)
+                {
+                    _app.LocalHttpServer = new LocalHttpServer(System.IO.Path.Combine(_app.WorkingFolder));
+                    _app.LocalHttpServer.Start();
+                }
+                await webView.EnsureCoreWebView2Async(null);
+                PreviewShow();
+                InitializeFirstFile();
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show(ex.Message);
+            }
+            
         }
         /// <summary>
         /// カラーピッカーのデフォルトカラー
@@ -111,6 +127,8 @@ namespace Prismark.Resources.Pages
                 // 最初のボタンに対応するファイルを表示
                 string firstFilePath = (string)fileButtons[0].Tag;
                 SwitchFile(firstFilePath);
+                ButtonHighLightChange(fileButtons[0]);
+                
             }
             else
             {
@@ -152,14 +170,9 @@ namespace Prismark.Resources.Pages
                 Tag = filePath
             };
             ButtonProperties.SetIsModified(button, false);  // 初期状態では未変更
-            //button.Click += (sender, e) => SwitchFile((string)((Button)sender).Tag);
             button.Click += (sender, e) => { 
                 SwitchFile((string)((Button)sender).Tag);
-                foreach(var item in fileButtons)
-                {
-                    SetButtonLeftline(item, false);
-                }
-                SetButtonLeftline(button, true);
+                ButtonHighLightChange(button);
             };
 
             fileButtons.Add(button);
@@ -199,7 +212,7 @@ namespace Prismark.Resources.Pages
                 
                 UpdateUndoRedoButtons();
 
-                txtMdFileName.Text = $"{System.IO.Path.GetFileNameWithoutExtension(newFilePath)}";
+                btnFileName.Content = $"{System.IO.Path.GetFileNameWithoutExtension(newFilePath)}";
             }
             finally
             {
@@ -268,33 +281,31 @@ namespace Prismark.Resources.Pages
         /// <param name="e"></param>
         private void AddNewFile(object sender, RoutedEventArgs e)
         {
-            var dialog = new CommonSaveFileDialog
+            var dialog = new Modal.FileNameInputDialog();
+            dialog.Owner = Window.GetWindow(this);
+            if (dialog.ShowDialog() == true)
             {
-                Title = "新規Markdownファイルを作成",
-                DefaultDirectory = System.IO.Path.Combine(_app.WorkingFolder, "md"),
-                DefaultExtension = "md",
-                AlwaysAppendDefaultExtension = true,
-                Filters = { new CommonFileDialogFilter("Markdown ファイル", "*.md") }
-            };
-
-            if (dialog.ShowDialog() == CommonFileDialogResult.Ok)
-            {
-                string newFilePath = dialog.FileName;
-
-                if (File.Exists(newFilePath))
+                string fileName = dialog.ModifiedFileName.Trim() + ".md";
+                string title = dialog.ModifiedFileName.Trim();
+                string content = $"# {title}";
+                try
                 {
-                    MessageBoxResult result = System.Windows.MessageBox.Show("同名のファイルが既に存在します。上書きしますか？", "確認", MessageBoxButton.YesNo);
-                    if (result == MessageBoxResult.No)
-                    {
-                        return;
-                    }
+                    string documentsPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+                    string filePath = System.IO.Path.Combine(_app.WorkingFolder,"md",fileName);
+                    File.WriteAllText(filePath, content);
+
+                    
+                    CreateFileButton(filePath);
+                    SortButtons("Name");
+                    SwitchFile(filePath);
+
+                    var button = fileButtons.FirstOrDefault(b => (string)b.Tag == filePath);
+                    ButtonHighLightChange(button);
                 }
-
-                File.WriteAllText(newFilePath, "");
-
-                CreateFileButton(newFilePath);
-                SortButtons("Name");
-                SwitchFile(newFilePath);
+                catch (Exception ex)
+                {
+                    System.Windows.MessageBox.Show($"Error creating file: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
             }
         }
         /// <summary>
@@ -322,17 +333,148 @@ namespace Prismark.Resources.Pages
                 pnlMdFiles.Children.Add(button);
             }
         }
-        private void SetButtonLeftline(Button button, bool isHighlighted)
+
+        /// <summary>
+        /// ファイル名ボタンのハイライト制御
+        /// </summary>
+        /// <param name="button"></param>
+        private void ButtonHighLightChange(Button button)
         {
-            if (button.Template.FindName("LeftLineRect", button) is Rectangle leftline)
+            foreach (var item in fileButtons)
             {
-                Color color = (Color)ColorConverter.ConvertFromString("#0295ff");
-                SolidColorBrush brush = new SolidColorBrush(color);
-                leftline.Fill = isHighlighted ? brush : Brushes.Transparent;
+                SetButtonHighLight(item, false);
             }
-            //Color backColor = (Color)ColorConverter.ConvertFromString("#1DFFFFFF");
-            //SolidColorBrush backColorBrush = new SolidColorBrush(backColor);
-            //button.Background = isHighlighted ? backColorBrush : Brushes.Transparent;
+            SetButtonHighLight(button, true);
+        }
+        private void SetButtonHighLight(Button button, bool isHighlighted)
+        {
+            Color backcolor = (Color)ColorConverter.ConvertFromString("#0295ff");
+            SolidColorBrush backbrush = new SolidColorBrush(backcolor);
+            button.Background = isHighlighted ? backbrush : Brushes.Transparent;
+        }
+        #endregion
+
+        #region ボタンクリックイベント
+        /// <summary>
+        /// 全てのファイルを保存
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void btnAllSave_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new Modal.CustomOkCancelDialog("全てのファイルを保存します。よろしいですか？");
+            dialog.Owner = Window.GetWindow(this);
+            if (dialog.ShowDialog() == true)
+            {
+                try
+                {
+                    foreach (var item in fileContents)
+                    {
+                        File.WriteAllText(item.Key, item.Value);
+                        UpdateFileButtonState(item.Key, false);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    System.Windows.MessageBox.Show($"ファイルの保存に失敗しました: {ex.Message}");
+                }
+            }
+        }
+        /// <summary>
+        /// プロジェクトのリフレッシュ
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void btnAllRefresh_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new Modal.CustomOkCancelDialog($"変更内容を破棄し、プロジェクト全体をリフレッシュします。{Environment.NewLine}よろしいですか？");
+            dialog.Owner = Window.GetWindow(this);
+            if (dialog.ShowDialog() == true)
+            {
+                try
+                {
+                    foreach (var item in fileContents.ToList())
+                    {
+                        if (item.Key == _currentFilePath)
+                        {
+                            if(File.Exists(item.Key)){
+                                MarkDownEditor.Text = File.ReadAllText(item.Key);
+                            }
+                        }
+                        if (File.Exists(item.Key))
+                        {
+                            fileContents[item.Key] = File.ReadAllText(item.Key);
+                        }
+                        else
+                        {
+                            fileContents.Remove(item.Key);
+                        }
+                    }
+                    pnlMdFiles.Children.Clear();
+                    fileButtons.Clear();
+                    CreateFileButtons();
+                    InitializeFirstFile();
+                }
+                catch (Exception ex)
+                {
+                    System.Windows.MessageBox.Show($"プロジェクトのリフレッシュに失敗しました: {ex.Message}");
+                }
+            }
+        }
+        /// <summary>
+        /// ファイルの場所を開く
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void btnBrowseDirectry_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                Process.Start("explorer.exe", _app.WorkingFolder);
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"ディレクトリを開けませんでした: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+        /// <summary>
+        /// ファイル名変更
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void btnFileName_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new Modal.FileNameInputDialog(btnFileName.Content.ToString());
+            dialog.Owner = Window.GetWindow(this);
+            if (dialog.ShowDialog() == true)
+            {
+                string fileName = dialog.ModifiedFileName.Trim() + ".md";
+                try
+                {
+                    if (dialog.InputFileName == btnFileName.Content.ToString()) return;
+
+                    string oldFilePath = System.IO.Path.Combine(_currentFilePath);
+                    string newFilePath = System.IO.Path.Combine(_app.WorkingFolder, "md", fileName);
+
+                    File.Move(oldFilePath, newFilePath);
+                    
+                    _currentFilePath = newFilePath;
+                    btnFileName.Content = dialog.ModifiedFileName.Trim();
+                    fileContents[_currentFilePath] = MarkDownEditor.Text;
+
+                    var button = fileButtons.FirstOrDefault(b => (string)b.Tag == oldFilePath);
+                    if (button != null)
+                    {
+                        button.Tag = newFilePath;
+                        button.Content = dialog.ModifiedFileName.Trim() + ".md";
+                    }
+                    SortButtons("Name");
+                }
+                catch (Exception ex)
+                {
+                    System.Windows.MessageBox.Show($"Error creating file: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
         }
         #endregion
 
@@ -374,7 +516,10 @@ namespace Prismark.Resources.Pages
         {
             string markdown = MarkDownEditor.Text;
             Convaeters.MarkDownToHTML conv = new Convaeters.MarkDownToHTML();
-            webView.NavigateToString(conv.ToUnitHtml(markdown));
+
+            string modifiedHtml = _app.LocalHttpServer.ReplaceMediaPaths(conv.ToUnitHtml(markdown));
+
+            webView.NavigateToString(modifiedHtml);
         }
         private void StatusBarChange()
         {
@@ -386,7 +531,15 @@ namespace Prismark.Resources.Pages
             Lines.Text = $"Lines: {_currentLine}";
             Col.Text = $"Col: {_currentColumn}";
         }
-
+        /// <summary>
+        /// 保存ボタン
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void btnSave_Click(object sender, RoutedEventArgs e)
+        {
+            SaveFile();
+        }
 
         #region マークダウン適用ロジック
         /// <summary>
@@ -424,6 +577,15 @@ namespace Prismark.Resources.Pages
         private void btnEditBreak_Click(object sender, RoutedEventArgs e)
         {
             ApplyInsertMarkdown("<br>");
+        }
+        /// <summary>
+        /// 段落
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void btnEditParagraph_Click(object sender, RoutedEventArgs e)
+        {
+            ApplyInsertMarkdownToNextLine("");
         }
         /// <summary>
         /// 太字
@@ -499,12 +661,13 @@ namespace Prismark.Resources.Pages
             var dialog = new CommonOpenFileDialog
             {
                 Title = "画像を選択してください",
-                InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)
+                InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures)
             };
             dialog.Filters.Add(new CommonFileDialogFilter("画像", "*.png;*.jpg;*.jpeg;*.gif;*.svg;*.bmp;*.tif;*.tiff;"));
             if (dialog.ShowDialog() == CommonFileDialogResult.Ok)
             {
-                ApplyInsertMarkdown($"![代替テキスト]({dialog.FileName})");
+                File.Copy(dialog.FileName, System.IO.Path.Combine(_app.WorkingFolder, "img", System.IO.Path.GetFileName(dialog.FileName)), true);
+                ApplyInsertMarkdown($"![代替テキスト](img/{System.IO.Path.GetFileName(dialog.FileName)})");
             }
 
         }
@@ -593,6 +756,8 @@ namespace Prismark.Resources.Pages
                 document.Insert(startOffset, markdownSymbol + selectedText + markdownSymbol);
 
                 document.EndUpdate();
+
+                MarkDownEditor.Focus();
             }
         }
         /// <summary>
@@ -634,6 +799,7 @@ namespace Prismark.Resources.Pages
                 document.Insert(startOffset, openTag + selectedText + closeTag);
                 document.EndUpdate();
             }
+            MarkDownEditor.Focus();
         }
         /// <summary>
         /// 選択範囲（現在行）にマークダウン適用（行先頭につけるタイプ）
@@ -680,6 +846,8 @@ namespace Prismark.Resources.Pages
             int newStartOffset = document.GetLineByNumber(startLine).Offset;
             int newEndOffset = document.GetLineByNumber(endLine).EndOffset;
             MarkDownEditor.Select(newStartOffset, newEndOffset - newStartOffset);
+
+            MarkDownEditor.Focus();
         }
         /// <summary>
         /// 選択範囲（現在行）の次の行にマークダウンのテンプレートを挿入
@@ -702,7 +870,7 @@ namespace Prismark.Resources.Pages
                 offset = line.EndOffset;
 
                 document.Insert(offset, Environment.NewLine + markdownTamplate + Environment.NewLine);
-                MarkDownEditor.CaretOffset = offset + markdownTamplate.Length + 1;
+                MarkDownEditor.CaretOffset = offset + markdownTamplate.Length + 4;
             }
             else
             {
@@ -719,7 +887,9 @@ namespace Prismark.Resources.Pages
                 endOffset = line.EndOffset;
                 document.Insert(endOffset, Environment.NewLine + markdownTamplate + Environment.NewLine);
                 MarkDownEditor.CaretOffset = endOffset + markdownTamplate.Length + 1;
+
             }
+            MarkDownEditor.Focus();
         }
         /// <summary>
         /// 選択範囲（現在位置）にマークダウンをを挿入
@@ -751,6 +921,7 @@ namespace Prismark.Resources.Pages
                 document.Insert(endOffset, markdownTamplate);
                 MarkDownEditor.CaretOffset = endOffset + markdownTamplate.Length;
             }
+            MarkDownEditor.Focus();
         }
         #endregion
 
@@ -902,6 +1073,7 @@ namespace Prismark.Resources.Pages
             e.Handled = true; // イベントが処理されたことを示す
             }
         }
+        
     }
 
     public static class ButtonProperties

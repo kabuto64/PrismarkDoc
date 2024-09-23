@@ -1,5 +1,10 @@
-﻿using System;
+﻿using IWshRuntimeLibrary;
+using Microsoft.WindowsAPICodePack.Dialogs;
+using Prismark.Resources.Pages;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,25 +16,26 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
-using Microsoft.WindowsAPICodePack.Dialogs;
-using System.Configuration;
-using System.IO;
-using IWshRuntimeLibrary;
-using System.Diagnostics;
 
-namespace Prismark.Resources.Pages
+namespace Prismark.Resources.StartUp
 {
     /// <summary>
-    /// StartUp.xaml の相互作用ロジック
+    /// Register.xaml の相互作用ロジック
     /// </summary>
-    public partial class StartUp : Page
+    public partial class Register : Page
     {
         private App _app = Application.Current as App;
-        public StartUp()
+        StartUpWindow _startUpWindow = null;
+        public Register(bool returnButtonVisible = true)
         {
             InitializeComponent();
-        }
 
+            btnReturnToStart.Visibility = returnButtonVisible ? Visibility.Visible : Visibility.Collapsed;
+        }
+        private void Page_Loaded(object sender, RoutedEventArgs e)
+        {
+            _startUpWindow = (StartUpWindow)Window.GetWindow(this);
+        }
         /// <summary>
         /// 参照ボタン
         /// </summary>
@@ -57,6 +63,7 @@ namespace Prismark.Resources.Pages
         {
             Directory.CreateDirectory(System.IO.Path.Combine(_app.WorkingFolder, "md"));
             Directory.CreateDirectory(System.IO.Path.Combine(_app.WorkingFolder, "img"));
+            Directory.CreateDirectory(System.IO.Path.Combine(_app.WorkingFolder, "Publish"));
         }
         /// <summary>
         /// 作業フォルダにショートカットを作成
@@ -144,9 +151,22 @@ namespace Prismark.Resources.Pages
             // ショートカットを作成
             CreateShortcut();
 
-            // エディター画面へ移動
-            NavigationService.Navigate(new Editor());
+            _app.WorkingFolder = projectPath;
+            _app.ProjectName = txtProjectName.Text;
+
+            MainWindow mainWindow = new MainWindow();
+            mainWindow.Show();
+
+            //_startUpWindow.NewWorkingDirectry = projectPath;
+            //_startUpWindow.DialogResult = true;
+            _startUpWindow.Close();
         }
 
+        private void btnReturnToStart_Click(object sender, RoutedEventArgs e)
+        {
+            NavigationService.Navigate(new Start());
+        }
+
+        
     }
 }

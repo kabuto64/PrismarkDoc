@@ -20,6 +20,7 @@ using Newtonsoft.Json;
 using System.Diagnostics;
 using System.Configuration;
 using IWshRuntimeLibrary;
+using System.Reflection;
 
 namespace Prismark
 {
@@ -35,28 +36,12 @@ namespace Prismark
             InitializeComponent();
             this.StateChanged += MainWindow_StateChanged;
 
-            bool isLaunchedFromShortcut = _app.IsLaunchedFromShortcut;
-            if (isLaunchedFromShortcut)
-            {
-                //MainFrame.Navigate(new Resources.Pages.Editor());
-                NavigateButton_Click(btnNavigateToEditor, new RoutedEventArgs());
-            }
-            else
-            {
-                string lastWorkingDir = ConfigurationManager.AppSettings["LastWorkingDirectory"];
-                if (string.IsNullOrEmpty(lastWorkingDir))
-                {
-                    //MainFrame.Navigate(new Resources.Pages.StartUp());
-                    NavigateButton_Click(btnNavigateToStartUp, new RoutedEventArgs());
-                }
-                else
-                {
-                    _app.WorkingFolder = lastWorkingDir;
-                    _app.ProjectName = System.IO.Path.GetFileName(lastWorkingDir);
-                    //MainFrame.Navigate(new Resources.Pages.Editor());
-                    NavigateButton_Click(btnNavigateToEditor, new RoutedEventArgs());
-                }
-            }
+            NavigateButton_Click(btnNavigateToEditor, new RoutedEventArgs());
+        }
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            SetButtonUnderline(btnNavigateToEditor, true);
+            btnNavigateToEditor.IsEnabled = false;
         }
         private void MainWindow_StateChanged(object sender, EventArgs e)
         {
@@ -134,11 +119,9 @@ namespace Prismark
             SetButtonUnderline(btnNavigateToEditor, false);
             SetButtonUnderline(btnNavigateToExport, false);
             SetButtonUnderline(btnNavigateToSetting, false);
-            SetButtonUnderline(btnNavigateToStartUp, false);
             btnNavigateToEditor.IsEnabled = true;
             btnNavigateToExport.IsEnabled = true;
             btnNavigateToSetting.IsEnabled = true;
-            btnNavigateToStartUp.IsEnabled = true;
 
             // 現在のページに対応するボタンをハイライト
             if (MainFrame.Content is Page currentPage)
@@ -164,5 +147,7 @@ namespace Prismark
 
 
         #endregion
+
+        
     }
 }

@@ -108,6 +108,7 @@
     <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=4.0.4.1, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Runtime.CompilerServices.Unsafe.4.5.3\lib\net461\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
     </Reference>
+    <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
     <Reference Include="Microsoft.CSharp" />
@@ -143,6 +144,12 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="Convaeters\MarkDownToHTML.cs" />
+    <Compile Include="Resources\Modal\CustomOkCancelDialog.xaml.cs">
+      <DependentUpon>CustomOkCancelDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Resources\Modal\FileNameInputDialog.xaml.cs">
+      <DependentUpon>FileNameInputDialog.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Resources\Pages\Editor.xaml.cs">
       <DependentUpon>Editor.xaml</DependentUpon>
     </Compile>
@@ -152,12 +159,23 @@
     <Compile Include="Resources\Pages\Setting.xaml.cs">
       <DependentUpon>Setting.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Resources\Pages\StartUp.xaml.cs">
-      <DependentUpon>StartUp.xaml</DependentUpon>
+    <Compile Include="Resources\StartUp\Open.xaml.cs">
+      <DependentUpon>Open.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Resources\StartUp\Register.xaml.cs">
+      <DependentUpon>Register.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Resources\StartUp\Start.xaml.cs">
+      <DependentUpon>Start.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Resources\StartUp\StartUpWindow.xaml.cs">
+      <DependentUpon>StartUpWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="UserControls\CustomIconButton.xaml.cs">
       <DependentUpon>CustomIconButton.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Utils\DialogBase.cs" />
+    <Compile Include="Utils\LocalHttpServer.cs" />
     <Compile Include="Utils\UndoRedoManager.cs" />
     <Page Include="Icons\ButtonIcons.xaml">
       <SubType>Designer</SubType>
@@ -175,6 +193,14 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Page Include="Resources\Modal\CustomOkCancelDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Resources\Modal\FileNameInputDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Resources\Pages\Editor.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -187,7 +213,19 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Resources\Pages\StartUp.xaml">
+    <Page Include="Resources\StartUp\Open.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Resources\StartUp\Register.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Resources\StartUp\Start.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Resources\StartUp\StartUpWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -253,23 +291,6 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Images\code_24dp_FFFFFF.svg" />
-    <Content Include="Images\create_24dp_FFFFFF.svg" />
-    <Content Include="Images\format_bold_24dp_FFFFFF.svg" />
-    <Content Include="Images\format_h1_24dp_FFFFFF_FILL0_wght0_GRAD0_opszNaN.svg" />
-    <Content Include="Images\format_h2_24dp_FFFFFF_FILL0_wght0_GRAD0_opsz24.svg" />
-    <Content Include="Images\format_h3_24dp_FFFFFF_FILL0_wght0_GRAD0_opsz24.svg" />
-    <Content Include="Images\format_italic_24dp_FFFFFF.svg" />
-    <Content Include="Images\format_list_bulleted_24dp_FFFFFF.svg" />
-    <Content Include="Images\format_list_numbered_24dp_FFFFFF.svg" />
-    <Content Include="Images\format_underlined_24dp_FFFFFF.svg" />
-    <Content Include="Images\image_24dp_FFFFFF.svg" />
-    <Content Include="Images\link_24dp_FFFFFF.svg" />
-    <Content Include="Images\palette_24dp_FFFFFF.svg" />
-    <Content Include="Images\publish_24dp_FFFFFF_FILL0_wght400_GRAD0_opsz24.svg" />
-    <Content Include="Images\settings_24dp_FFFFFF_FILL0_wght400_GRAD0_opsz24.svg" />
-  </ItemGroup>
-  <ItemGroup>
     <COMReference Include="IWshRuntimeLibrary">
       <Guid>{F935DC20-1CF0-11D0-ADB9-00C04FD58A0B}</Guid>
       <VersionMajor>1</VersionMajor>
@@ -280,7 +301,9 @@
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </COMReference>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="Images\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\packages\Microsoft.Web.WebView2.1.0.2592.51\build\Microsoft.Web.WebView2.targets" Condition="Exists('..\packages\Microsoft.Web.WebView2.1.0.2592.51\build\Microsoft.Web.WebView2.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
