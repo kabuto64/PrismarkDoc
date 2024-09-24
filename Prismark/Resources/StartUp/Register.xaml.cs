@@ -154,11 +154,16 @@ namespace Prismark.Resources.StartUp
             _app.WorkingFolder = projectPath;
             _app.ProjectName = txtProjectName.Text;
 
-            MainWindow mainWindow = new MainWindow();
-            mainWindow.Show();
+            if(_startUpWindow.CurrentMode == StartUpMode.Mode.Start)
+            {
+                MainWindow mainWindow = new MainWindow();
+                mainWindow.Show();
+            }
+            else
+            {
+                _startUpWindow.DialogResult = true;
+            }
 
-            //_startUpWindow.NewWorkingDirectry = projectPath;
-            //_startUpWindow.DialogResult = true;
             _startUpWindow.Close();
         }
 

@@ -21,6 +21,9 @@ using System.Diagnostics;
 using System.Configuration;
 using IWshRuntimeLibrary;
 using System.Reflection;
+using Prismark.Resources.StartUp;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
+using Prismark.Resources.Pages;
 
 namespace Prismark
 {
@@ -146,8 +149,41 @@ namespace Prismark
         }
 
 
+
         #endregion
 
-        
+        private void NewProject(object sender, RoutedEventArgs e)
+        {
+            StartUpWindow startUpWindow = new StartUpWindow(StartUpMode.Mode.Register);
+            startUpWindow.Owner = Window.GetWindow(this);
+            if (startUpWindow.ShowDialog() == true)
+            {
+                Refresh();
+            }
+        }
+        private void OpenProject(object sender, RoutedEventArgs e)
+        {
+            StartUpWindow startUpWindow = new StartUpWindow(StartUpMode.Mode.Open);
+            startUpWindow.Owner = Window.GetWindow(this);
+            if (startUpWindow.ShowDialog() == true)
+            {
+                Refresh();
+            }
+        }
+        private void Refresh()
+        {
+            _pageCache = new Dictionary<string, Page>();
+            MainFrame.Content = null;
+
+            if(_app.LocalHttpServer != null)
+            {
+                _app.LocalHttpServer.Stop();
+                _app.LocalHttpServer = null;
+                _app.LocalHttpServer = new Utils.LocalHttpServer(_app.WorkingFolder);
+                _app.LocalHttpServer.Start();
+            }
+            Editor editor = new Editor();
+            MainFrame.Navigate(editor);
+        }
     }
 }

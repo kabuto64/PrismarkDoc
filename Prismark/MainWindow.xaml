@@ -290,8 +290,8 @@
         </Grid.RowDefinitions>
         <Menu Grid.Row="0">
             <MenuItem Header="ファイル"  Style="{StaticResource DarkMenuItem}">
-                <MenuItem Header="新規作成"/>
-                <MenuItem Header="開く"/>
+                <MenuItem Header="新規作成" Click="NewProject"/>
+                <MenuItem Header="開く" Click="OpenProject"/>
                 <MenuItem Header="保存"/>
                 <Separator Style="{StaticResource DarkMenuSeparator}"/>
                 <MenuItem Header="エクスポート">
@@ -335,6 +335,7 @@
             <Button Content="Setting"
                     x:Name="btnNavigateToSetting"
                     Click="NavigateButton_Click" 
+                    Visibility="Collapsed"
                     Tag="{StaticResource SettingIcon}"
                     WindowChrome.IsHitTestVisibleInChrome="True" 
                     Style="{StaticResource HeaderButtonStyle}"/>

@@ -24,6 +24,7 @@ using Prismark.Utils;
 using System.Net.Http;
 using System.Diagnostics;
 using System.Threading;
+using System.Windows.Controls.Primitives;
 
 namespace Prismark.Resources.Pages
 {
@@ -70,9 +71,6 @@ namespace Prismark.Resources.Pages
             MarkDownEditor.TextArea.Caret.PositionChanged += Caret_PositionChanged;
             this.KeyDown += Editor_KeyDown;
 
-            // ポップアップが開いたときにフォーカスを設定
-            ColorPickerPopup.Opened += (s, e) => ColorCanvas.Focus();
-
             // 規定の色リストを初期化
             InitializePredefinedColors();
 
@@ -83,7 +81,14 @@ namespace Prismark.Resources.Pages
             CreateFileButtons();
 
             InitializeAsync();
+
+            // すべてのマウスダウンイベントをキャプチャ
+            EventManager.RegisterClassHandler(typeof(Window),
+                Mouse.MouseDownEvent,
+                new MouseButtonEventHandler(OnMouseDown),
+                true);
         }
+        
         private void Page_Loaded(object sender, RoutedEventArgs e)
         {
             
@@ -118,7 +123,7 @@ namespace Prismark.Resources.Pages
                 Colors.Orange, Colors.Purple, Colors.Pink, Colors.Brown,
                 Colors.Gray, Colors.Black, Colors.White, Colors.Cyan
             };
-            PredefinedColorsList.ItemsSource = _predefinedColors.Select(c => new SolidColorBrush(c));
+            //PredefinedColorsList.ItemsSource = _predefinedColors.Select(c => new SolidColorBrush(c));
         }
         private void InitializeFirstFile()
         {
@@ -387,7 +392,7 @@ namespace Prismark.Resources.Pages
         /// <param name="e"></param>
         private void btnAllRefresh_Click(object sender, RoutedEventArgs e)
         {
-            var dialog = new Modal.CustomOkCancelDialog($"変更内容を破棄し、プロジェクト全体をリフレッシュします。{Environment.NewLine}よろしいですか？");
+            var dialog = new Modal.CustomOkCancelDialog($"プロジェクト全体を同期し、リフレッシュします。{Environment.NewLine}よろしいですか？{Environment.NewLine}※ 未保存の変更内容は破棄されます");
             dialog.Owner = Window.GetWindow(this);
             if (dialog.ShowDialog() == true)
             {
@@ -576,7 +581,7 @@ namespace Prismark.Resources.Pages
         /// <param name="e"></param>
         private void btnEditBreak_Click(object sender, RoutedEventArgs e)
         {
-            ApplyInsertMarkdown("<br>");
+            ApplyInsertMarkdown($"<br>");
         }
         /// <summary>
         /// 段落
@@ -678,7 +683,7 @@ namespace Prismark.Resources.Pages
         /// <param name="e"></param>
         private void btnEditColor_Click(object sender, RoutedEventArgs e)
         {
-            ApplyStartEndMarkdown($@"<span style=""color:{ColorTextBox.Text}"">", $"</span>");
+            ApplyStartEndMarkdown($@"<span style=""color:{ConvertWpfColorToHtml(ColorTextBox.Text)}"">", $"</span>");
         }
         /// <summary>
         /// 箇条書き
@@ -926,22 +931,6 @@ namespace Prismark.Resources.Pages
         #endregion
 
 
-        private void ColorPickerPopup_Opened(object sender, EventArgs e)
-        {
-            ColorCanvas.Focus();
-        }
-
-
-        private void ColorTextBox_GotFocus(object sender, RoutedEventArgs e)
-        {
-            ColorPickerPopup.IsOpen = true;
-        }
-
-        private void ColorOkButton_Click(object sender, RoutedEventArgs e)
-        {
-            ColorPickerPopup.IsOpen = false;
-        }
-
         private void ColorCanvas_SelectedColorChanged(object sender, RoutedPropertyChangedEventArgs<Color?> e)
         {
             if (e.NewValue.HasValue)
@@ -952,14 +941,6 @@ namespace Prismark.Resources.Pages
                 btnEditColor.Foreground = (Brush)new BrushConverter().ConvertFrom(hexColor);
             }
         }
-        private void PredefinedColorsList_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (PredefinedColorsList.SelectedItem is SolidColorBrush selectedBrush)
-            {
-                ColorCanvas.SelectedColor = selectedBrush.Color;
-            }
-        }
-
         /// <summary>
         /// ショートカットキーの定義
         /// </summary>
@@ -967,10 +948,83 @@ namespace Prismark.Resources.Pages
         /// <param name="e"></param>
         private void Editor_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
+            // Ctlr+S:保存
             if (e.Key == Key.S && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
             {
                 SaveFile();
                 e.Handled = true; // イベントが処理されたことを示す
+            }
+            // Ctlr+Shift+S:すべて保存
+            if(e.Key == Key.S &&
+                (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control &&
+                (Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift)
+            {
+                btnAllSave_Click(sender, e);
+                e.Handled = true;
+            }
+            // Ctlr+N:新規ファイル
+            if (e.Key == Key.N && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+            {
+                AddNewFile(sender,e);
+                e.Handled = true; // イベントが処理されたことを示す
+            }
+
+        }
+        private void MarkDownEditor_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            // Ctrl+Z:戻る
+            if (e.Key == Key.Z && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+            {
+                if (btnUndo.IsEnabled)
+                {
+                    Undo();
+                }
+
+                e.Handled = true;
+            }
+            // Ctrl+Y:元に戻す
+            if (e.Key == Key.Y && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+            {
+                if (btnRedo.IsEnabled)
+                {
+                    Redo();
+                }
+                e.Handled = true;
+            }
+            // Ctrl+B:太字
+            if (e.Key == Key.B && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+            {
+                btnEditBold_Click(sender, e);
+                e.Handled = true;
+            }
+            // Ctrl+I:斜体
+            if (e.Key == Key.I && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+            {
+                btnEdititalic_Click(sender, e);
+                e.Handled = true;
+            }
+            // Ctrl+1:見出し大
+            if (e.Key == Key.D1 && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+            {
+                btnEditH1_Click(sender, e);
+                e.Handled = true;
+            }
+            // Ctrl+2:見出し中
+            if (e.Key == Key.D2 && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+            {
+                btnEditH2_Click(sender, e);
+                e.Handled = true;
+            }
+            // Ctrl+3:見出し小
+            if (e.Key == Key.D3 && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+            {
+                btnEditH3_Click(sender, e);
+                e.Handled = true;
+            }
+            // Shift+Enter 改行文字挿入
+            if (e.Key == Key.Enter && (Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift)
+            {
+                btnEditBreak_Click(sender, e);
             }
         }
 
@@ -1053,27 +1107,60 @@ namespace Prismark.Resources.Pages
             e.Handled = true; // イベントが処理されたことを示す
         }
 
-        private void MarkDownEditor_PreviewKeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.Key == Key.Z && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
-            {
-                if (btnUndo.IsEnabled)
-                {
-                    Undo();
-                }
+        
 
-                e.Handled = true; // イベントが処理されたことを示す
-            }
-            if (e.Key == Key.Y && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+        /// <summary>
+        /// カラーピッカー関連
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ColorTextBox_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            ColorPickerPopup.IsOpen = true;
+            ColorPicker.SelectedColor = (Color)ColorConverter.ConvertFromString(ColorTextBox.Text);
+        }
+        private void OnMouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (ColorPickerPopup.IsOpen && !IsMouseOverPopup() && !ColorTextBox.IsMouseOver)
             {
-                if (btnRedo.IsEnabled)
-            {
-                Redo();
-            }
-            e.Handled = true; // イベントが処理されたことを示す
+                ColorPickerPopup.IsOpen = false;
             }
         }
-        
+        private bool IsMouseOverPopup()
+        {
+            return ColorPickerPopup.IsMouseOver || IsMouseOverPopupContent();
+        }
+
+        private bool IsMouseOverPopupContent()
+        {
+            if (ColorPickerPopup.Child == null) return false;
+
+            var point = Mouse.GetPosition(ColorPickerPopup.Child);
+            var hitTestResult = VisualTreeHelper.HitTest(ColorPickerPopup.Child, point);
+            return hitTestResult != null;
+        }
+        private void ColorPicker_ColorChanged(object sender, RoutedEventArgs e)
+        {
+            ColorTextBox.Text = ColorPicker.SelectedColor.ToString();
+            btnEditColor.Foreground = new SolidColorBrush(ColorPicker.SelectedColor);
+        }
+        public static string ConvertWpfColorToHtml(string wpfColor)
+        {
+            if (wpfColor.StartsWith("#") && wpfColor.Length == 9)
+            {
+                return $"#{wpfColor.Substring(3, 6)}{wpfColor.Substring(1, 2)}";
+            }
+            else
+            {
+                return "#FFFFFFFF";
+            }
+        }
+
+        public static string ConvertWpfColorToHtml(Color wpfColor)
+        {
+            return $"#{wpfColor.R:X2}{wpfColor.G:X2}{wpfColor.B:X2}{wpfColor.A:X2}";
+        }
+
     }
 
     public static class ButtonProperties

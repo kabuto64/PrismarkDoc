@@ -7,6 +7,7 @@
       xmlns:avalonEdit="http://icsharpcode.net/sharpdevelop/avalonedit"
       xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
       xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
+      xmlns:colorpicker="clr-namespace:ColorPicker;assembly=ColorPicker"
       mc:Ignorable="d" 
       d:DesignHeight="450"
       Title="Editor" Loaded="Page_Loaded">
@@ -205,13 +206,13 @@
             <StackPanel Grid.Row="1" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right">
                 <Button Content="Add"
                                 x:Name="btnNewMdFile"
-                                ToolTip="新規マークダウン"
+                                ToolTip="新規マークダウン(Ctlr+N)"
                                 Tag="{StaticResource NewDocIcon}"
                                 KeyboardNavigation.AcceptsReturn="False"
                                 Style="{StaticResource EditorIconButtonStyle}" Click="AddNewFile"/>
                 <Button Content="Add"
                                 x:Name="btnAllSave"
-                                ToolTip="すべてのファイルを保存"
+                                ToolTip="すべてのファイルを保存(Ctrl+Shift+S)"
                                 Tag="{StaticResource SaveAllIcon}"
                                 Style="{StaticResource EditorIconButtonStyle}" Click="btnAllSave_Click" />
                 <Button Content="BrowseDirectry"
@@ -221,7 +222,7 @@
                                 Style="{StaticResource EditorIconButtonStyle}" Click="btnBrowseDirectry_Click"/>
                 <Button Content="Refresh"
                                 x:Name="btnAllRefresh"
-                                ToolTip="プロジェクト全体をリフレッシュ"
+                                ToolTip="プロジェクトを同期"
                                 Tag="{StaticResource ReloadIcon}"
                                 Style="{StaticResource EditorIconButtonStyle}" Click="btnAllRefresh_Click" />
             </StackPanel>
@@ -261,177 +262,133 @@
                 <!-- エディターアイコン置き場 -->
                 <StackPanel Grid.Row="2" Orientation="Horizontal"  HorizontalAlignment="Left">
                     <Button Content="Undo"
-                x:Name="btnSave"
-                ToolTip="保存"
-                Tag="{StaticResource SaveIcon}"
-                Margin="10,-2,0,0"
-                Style="{StaticResource EditorIconButtonStyle}" Click="btnSave_Click"/>
+                            x:Name="btnSave"
+                            ToolTip="保存(Ctrl+S)"
+                            Tag="{StaticResource SaveIcon}"
+                            Margin="10,-2,0,0"
+                            Style="{StaticResource EditorIconButtonStyle}" Click="btnSave_Click"/>
                     <Button Content="Undo"
-                x:Name="btnUndo"
-                ToolTip="元に戻す"
-                Tag="{StaticResource UndoIcon}"
-                Margin="10,-2,0,0"
-                Style="{StaticResource EditorIconButtonStyle}" Click="btnUndo_Click"/>
+                            x:Name="btnUndo"
+                            ToolTip="元に戻す(Ctrl+Z)"
+                            Tag="{StaticResource UndoIcon}"
+                            Margin="10,-2,0,0"
+                            Style="{StaticResource EditorIconButtonStyle}" Click="btnUndo_Click"/>
                     <Button Content="Redo"
-                x:Name="btnRedo"
-                ToolTip="やり直し"
-                Tag="{StaticResource RedoIcon}"
-                Margin="0,-2,0,0"
-                Style="{StaticResource EditorIconButtonStyle}" Click="btnRedo_Click" />
+                            x:Name="btnRedo"
+                            ToolTip="やり直し(Ctrl+Y)"
+                            Tag="{StaticResource RedoIcon}"
+                            Margin="0,-2,0,0"
+                            Style="{StaticResource EditorIconButtonStyle}" Click="btnRedo_Click" />
                     <Button Content="Break"
-                Margin="10,4,0,0"
-                x:Name="btnEditBreak"
-                ToolTip="改行"
-                Tag="{StaticResource ReturnIcon}"
-                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditBreak_Click"/>
+                            Margin="10,4,0,0"
+                            x:Name="btnEditBreak"
+                            ToolTip="改行挿入(Shift+Enter)"
+                            Tag="{StaticResource ReturnIcon}"
+                            Style="{StaticResource EditorIconButtonStyle}" Click="btnEditBreak_Click"/>
                     <Button Content="Paragraph"
-                Margin="0,5,0,0"
-                x:Name="btnEditParagraph"
-                ToolTip="段落"
-                Tag="{StaticResource ParagraphIcon}"
-                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditParagraph_Click"/>
+                            Margin="0,5,0,0"
+                            x:Name="btnEditParagraph"
+                            ToolTip="段落"
+                            Tag="{StaticResource ParagraphIcon}"
+                            Style="{StaticResource EditorIconButtonStyle}" Click="btnEditParagraph_Click"/>
                     <Button Content="H1"
-                x:Name="btnEditH1"
-                ToolTip="見出し（大）"
-                Tag="{StaticResource H1Icon}"
-                Margin="10,-2,0,0"
-                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditH1_Click"/>
+                            x:Name="btnEditH1"
+                            ToolTip="見出し（大）(Ctrl+1)"
+                            Tag="{StaticResource H1Icon}"
+                            Margin="10,-2,0,0"
+                            Style="{StaticResource EditorIconButtonStyle}" Click="btnEditH1_Click"/>
                     <Button Content="H2"
-                x:Name="btnEditH2"
-                ToolTip="見出し（中）"
-                Tag="{StaticResource H2Icon}"
-                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditH2_Click"/>
+                            x:Name="btnEditH2"
+                            ToolTip="見出し（中）(Ctrl+2)"
+                            Tag="{StaticResource H2Icon}"
+                            Style="{StaticResource EditorIconButtonStyle}" Click="btnEditH2_Click"/>
                     <Button Content="H3"
-                x:Name="btnEditH3"
-                ToolTip="見出し（小）"
-                Tag="{StaticResource H3Icon}"
-                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditH3_Click"/>
+                            x:Name="btnEditH3"
+                            ToolTip="見出し（小）(Ctrl+3)"
+                            Tag="{StaticResource H3Icon}"
+                            Style="{StaticResource EditorIconButtonStyle}" Click="btnEditH3_Click"/>
                     <Button Content="Bold"
-                Margin="10,0,0,0"
-                x:Name="btnEditBold"
-                ToolTip="太字"
-                Tag="{StaticResource BoldIcon}"
-                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditBold_Click"/>
+                            Margin="10,0,0,0"
+                            x:Name="btnEditBold"
+                            ToolTip="太字(Ctrl+B)"
+                            Tag="{StaticResource BoldIcon}"
+                            Style="{StaticResource EditorIconButtonStyle}" Click="btnEditBold_Click"/>
                     <Button Content="italic"
-                x:Name="btnEdititalic"
-                ToolTip="斜体"
-                Tag="{StaticResource ItalicIcon}"
-                Style="{StaticResource EditorIconButtonStyle}" Click="btnEdititalic_Click"/>
+                            x:Name="btnEdititalic"
+                            ToolTip="斜体(Ctrl+I)"
+                            Tag="{StaticResource ItalicIcon}"
+                            Style="{StaticResource EditorIconButtonStyle}" Click="btnEdititalic_Click"/>
                     <Button Content="Underline"
-                x:Name="btnEditUnderline"
-                ToolTip="下線"
-                Tag="{StaticResource UnderlineIcon}"
-                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditUnderline_Click"/>
+                            x:Name="btnEditUnderline"
+                            ToolTip="下線"
+                            Tag="{StaticResource UnderlineIcon}"
+                            Style="{StaticResource EditorIconButtonStyle}" Click="btnEditUnderline_Click"/>
                     <Button Content="Strikethrough"
-                x:Name="btnEditStrikethrough"
-                ToolTip="打ち消し線"
-                Tag="{StaticResource StrikethroughIcon}"
-                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditStrikethrough_Click"/>
+                            x:Name="btnEditStrikethrough"
+                            ToolTip="打ち消し線"
+                            Tag="{StaticResource StrikethroughIcon}"
+                            Style="{StaticResource EditorIconButtonStyle}" Click="btnEditStrikethrough_Click"/>
                     <Button Content="quote"
-                x:Name="btnEditQuote"
-                Tag="{StaticResource QuoteIcon}"
-                ToolTip="引用"
-                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditQuote_Click"/>
+                            x:Name="btnEditQuote"
+                            Tag="{StaticResource QuoteIcon}"
+                            ToolTip="引用"
+                            Style="{StaticResource EditorIconButtonStyle}" Click="btnEditQuote_Click"/>
                     <Button Content="code"
-                x:Name="btnEditCode"
-                Tag="{StaticResource CodeIcon}"
-                ToolTip="コード"
-                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditCode_Click"/>
+                            x:Name="btnEditCode"
+                            Tag="{StaticResource CodeIcon}"
+                            ToolTip="コード"
+                            Style="{StaticResource EditorIconButtonStyle}" Click="btnEditCode_Click"/>
                     <Button Content="link"
-                x:Name="btnEditLink"
-                ToolTip="リンク"
-                Tag="{StaticResource LinkIcon}"
-                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditLink_Click"/>
+                            x:Name="btnEditLink"
+                            ToolTip="リンク"
+                            Tag="{StaticResource LinkIcon}"
+                            Style="{StaticResource EditorIconButtonStyle}" Click="btnEditLink_Click"/>
                     <Button Content="Image"
-                x:Name="btnEditImage"
-                Margin="0,0,0,0"
-                ToolTip="画像の挿入"
-                Tag="{StaticResource ImageIcon}"
-                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditImage_Click"/>
+                            x:Name="btnEditImage"
+                            Margin="0,0,0,0"
+                            ToolTip="画像の挿入"
+                            Tag="{StaticResource ImageIcon}"
+                            Style="{StaticResource EditorIconButtonStyle}" Click="btnEditImage_Click"/>
                     <Button Content="Color"
-                x:Name="btnEditColor"
-                ToolTip="文字を着色する"
-                Tag="{StaticResource ColorIcon}"
-                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditColor_Click"/>
-                    <TextBox x:Name="ColorTextBox" Width="60" Height="20" 
-                 Background="#FF464646" Text="#000000" 
-                 Foreground="White"  GotFocus="ColorTextBox_GotFocus"/>
+                            x:Name="btnEditColor"
+                            ToolTip="文字を着色する"
+                            Tag="{StaticResource ColorIcon}"
+                            Style="{StaticResource EditorIconButtonStyle}" Click="btnEditColor_Click"/>
+                    <TextBox x:Name="ColorTextBox" Width="65" Height="20" 
+                             Background="#FF464646" Text="#000000" 
+                             Foreground="White" PreviewMouseLeftButtonDown="ColorTextBox_PreviewMouseLeftButtonDown"/>
                     <!-- カラーピッカー用のポップアップ -->
-                    <Popup x:Name="ColorPickerPopup" PlacementTarget="{Binding ElementName=ColorTextBox}" Placement="Bottom" Opened="ColorPickerPopup_Opened">
-                        <Grid>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="*"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="30"/>
-                            </Grid.RowDefinitions>
-                            <xctk:ColorCanvas x:Name="ColorCanvas" 
-                                              Background="#FFF"
-                      SelectedColorChanged="ColorCanvas_SelectedColorChanged"
-                      Grid.Row="0"/>
-                            <ListBox x:Name="PredefinedColorsList" Grid.Row="1" 
-                         SelectionChanged="PredefinedColorsList_SelectionChanged"
-                         ScrollViewer.HorizontalScrollBarVisibility="Disabled">
-                                <ListBox.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <WrapPanel />
-                                    </ItemsPanelTemplate>
-                                </ListBox.ItemsPanel>
-                                <ListBox.ItemTemplate>
-                                    <DataTemplate>
-                                        <Border Width="20" Height="20" Margin="2" 
-                                    Background="{Binding}" 
-                                    ToolTip="{Binding}"/>
-                                    </DataTemplate>
-                                </ListBox.ItemTemplate>
-                            </ListBox>
-                            <Button Content="OK" Click="ColorOkButton_Click" 
-                        Grid.Row="2" 
-                        BorderThickness="0"
-                        Background="#FFB5C0C7"
-                        HorizontalAlignment="Stretch" 
-                        VerticalAlignment="Stretch"
-                        Foreground="#FFF"
-                        Margin="0,0,0,0">
-                                <Button.Style>
-                                    <Style TargetType="Button">
-                                        <Style.Triggers>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter Property="Background" Value="#444444"/>
-                                            </Trigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Button.Style>
-                            </Button>
-                        </Grid>
+                    <Popup x:Name="ColorPickerPopup" PlacementTarget="{Binding ElementName=ColorTextBox}" Placement="Bottom">
+                        <colorpicker:StandardColorPicker x:Name="ColorPicker" Width="200" Height="380" ColorChanged="ColorPicker_ColorChanged"/>
                     </Popup>
                     <Button Content="List"
-                x:Name="btnEditList"
-                Margin="20,0,0,0"
-                ToolTip="箇条書きリスト"
-                Tag="{StaticResource FormatListIcon}"
-                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditList_Click"/>
+                            x:Name="btnEditList"
+                            Margin="20,0,0,0"
+                            ToolTip="箇条書きリスト"
+                            Tag="{StaticResource FormatListIcon}"
+                            Style="{StaticResource EditorIconButtonStyle}" Click="btnEditList_Click"/>
                     <Button Content="ListNum"
-                x:Name="btnEditListNum"
-                ToolTip="番号付きリスト"
-                Tag="{StaticResource FormatListNumIcon}"
-                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditListNum_Click"/>
+                            x:Name="btnEditListNum"
+                            ToolTip="番号付きリスト"
+                            Tag="{StaticResource FormatListNumIcon}"
+                            Style="{StaticResource EditorIconButtonStyle}" Click="btnEditListNum_Click"/>
                     <Button Content="Grid"
-                x:Name="btnEditGrid"
-                ToolTip="テーブルの挿入"
-                Tag="{StaticResource GridIcon}"
-                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditGrid_Click"/>
+                            x:Name="btnEditGrid"
+                            ToolTip="テーブルの挿入"
+                            Tag="{StaticResource GridIcon}"
+                            Style="{StaticResource EditorIconButtonStyle}" Click="btnEditGrid_Click"/>
                     <Button Content="Color"
-                x:Name="btnEditCodeBlock"
-                ToolTip="コードブロック"
-                Tag="{StaticResource CodeBlockIcon}"
-                Style="{StaticResource EditorIconButtonStyle}" Click="btnEditCodeBlock_Click"/>
+                            x:Name="btnEditCodeBlock"
+                            ToolTip="コードブロック"
+                            Tag="{StaticResource CodeBlockIcon}"
+                            Style="{StaticResource EditorIconButtonStyle}" Click="btnEditCodeBlock_Click"/>
                     <ComboBox Width="120" SelectedIndex="0"
-                  Height="24" 
-                  x:Name="cbxLanguage"
-                  HorizontalAlignment="Stretch" 
-                  VerticalAlignment="Stretch"
-                  Background="#222"
-                  Foreground="#FFF">
+                              Height="24" 
+                              x:Name="cbxLanguage"
+                              HorizontalAlignment="Stretch" 
+                              VerticalAlignment="Stretch"
+                              Background="#222"
+                              Foreground="#FFF">
                         <ComboBox.Style>
                             <Style TargetType="{x:Type ComboBox}">
                                 <Setter Property="Background" Value="#222"/>

@@ -63,8 +63,15 @@ namespace Prismark.Resources.StartUp
                 _app.WorkingFolder = txtFolderPath.Text;
                 _app.ProjectName = txtProjectName.Text;
 
-                MainWindow mainWindow = new MainWindow();
-                mainWindow.Show();
+                if (_startUpWindow.CurrentMode == StartUpMode.Mode.Start)
+                {
+                    MainWindow mainWindow = new MainWindow();
+                    mainWindow.Show();
+                }
+                else
+                {
+                    _startUpWindow.DialogResult = true;
+                }
 
                 //_startUpWindow.NewWorkingDirectry = txtFolderPath.Text;
 

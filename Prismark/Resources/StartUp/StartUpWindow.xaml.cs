@@ -30,19 +30,22 @@ namespace Prismark.Resources.StartUp
     public partial class StartUpWindow : Window
     {
         public string NewWorkingDirectry {  get; set; }
+        public Mode CurrentMode { get; set; }
 
         public StartUpWindow(Mode mode = Mode.Start)
         {
             InitializeComponent();
 
+            CurrentMode = mode;
+
             switch (mode)
             {
                 case Mode.Open:
-                    Open open = new Open();
+                    Open open = new Open(false);
                     MainFrame.Navigate(open);
                     break;
                 case Mode.Register:
-                    Register register = new Register();
+                    Register register = new Register(false);
                     MainFrame.Navigate(register);
                     break;
                 default:
