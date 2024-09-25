@@ -150,12 +150,9 @@
                             <Border BorderThickness="0" 
                                 BorderBrush="Transparent" 
                                 Background="{TemplateBinding Background}">
-                                <StackPanel Orientation="Horizontal">
+                                <StackPanel Orientation="Horizontal"  Margin="10,0">
                                     <TextBlock Text="{TemplateBinding Content}"
-                                               FontSize="{TemplateBinding FontSize}"
-                                               
-                                       HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                       VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                               FontSize="{TemplateBinding FontSize}"/>
                                     <ContentControl x:Name="Icon" 
                                                     Content="{StaticResource EditIcon}"
                                                     FontSize="{TemplateBinding FontSize}"
@@ -195,8 +192,8 @@
             </Grid.RowDefinitions>
             <StackPanel Grid.Row="0" Orientation="Horizontal"  Margin="10,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Left">
                 <TextBlock x:Name="txtProjectName" 
-                           Text="Undefined" 
-                           FontFamily="Segoe UI" 
+                           Text="" 
+                           FontFamily="Segoe UI,Yu Gothic" 
                            FontSize="15" 
                            FontWeight="Bold" 
                            Width="150"
@@ -249,13 +246,13 @@
                     <RowDefinition Height="1"/>
                     <RowDefinition Height="30"/>
                 </Grid.RowDefinitions>
-                <StackPanel Grid.Row="0"  Margin="10">
+                <StackPanel Grid.Row="0" Width="AUTO" HorizontalAlignment="Left" Margin="10">
                     <Button x:Name="btnFileName"  Style="{StaticResource TextRenameButtonStyle}" 
-                            Content="Undefined" 
+                            Content="" 
+                            FontFamily="Segoe UI,Yu Gothic"
                             FontSize="24" 
                             KeyboardNavigation.AcceptsReturn="False"
                             Click="btnFileName_Click"/>
-                    <!--<TextBlock x:Name="txtMdFileName" Text="Undefined" FontFamily="Segoe UI" FontSize="24" FontWeight="Bold" Margin="0,0,0,10" Foreground="White"/>-->
                 </StackPanel>
                 <!-- 境界線 -->
                 <Border Grid.Row="1" Background="#333333"/>
@@ -354,8 +351,8 @@
                             ToolTip="文字を着色する"
                             Tag="{StaticResource ColorIcon}"
                             Style="{StaticResource EditorIconButtonStyle}" Click="btnEditColor_Click"/>
-                    <TextBox x:Name="ColorTextBox" Width="65" Height="20" 
-                             Background="#FF464646" Text="#000000" 
+                    <TextBox x:Name="ColorTextBox" Width="70" Height="20" 
+                             Background="#FF464646" Text="#FF000000" 
                              Foreground="White" PreviewMouseLeftButtonDown="ColorTextBox_PreviewMouseLeftButtonDown"/>
                     <!-- カラーピッカー用のポップアップ -->
                     <Popup x:Name="ColorPickerPopup" PlacementTarget="{Binding ElementName=ColorTextBox}" Placement="Bottom">
@@ -508,7 +505,7 @@
                     Grid.Column="0"
                     Name="MarkDownEditor"
                     SyntaxHighlighting="C#"
-                    FontFamily="Consolas"
+                    FontFamily="Segoe UI,Meiryo"
                     FontSize="10pt"
                     ShowLineNumbers="True" TextChanged="MarkDownEditor_TextChanged" PreviewKeyDown="MarkDownEditor_PreviewKeyDown">
                     <avalonEdit:TextEditor.Options>

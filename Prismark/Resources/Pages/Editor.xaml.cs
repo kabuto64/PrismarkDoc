@@ -25,6 +25,7 @@ using System.Net.Http;
 using System.Diagnostics;
 using System.Threading;
 using System.Windows.Controls.Primitives;
+using Prismark.Resources.Modal;
 
 namespace Prismark.Resources.Pages
 {
@@ -710,7 +711,13 @@ namespace Prismark.Resources.Pages
         /// <param name="e"></param>
         private void btnEditGrid_Click(object sender, RoutedEventArgs e)
         {
-            ApplyInsertMarkdownToNextLine($@"| 左揃え | 中央揃え | 右揃え |{Environment.NewLine}| :-- | :-: | --: |{Environment.NewLine}| * | * | * |");
+            TableSelectDialog dialog = new TableSelectDialog();
+            dialog.Owner = Window.GetWindow(this);
+            if(dialog.ShowDialog() == true)
+            {
+                ApplyInsertMarkdownToNextLine(dialog.InsertTableMarkDown);
+            }
+            
         }
         /// <summary>
         /// コードブロック挿入
@@ -1025,6 +1032,7 @@ namespace Prismark.Resources.Pages
             if (e.Key == Key.Enter && (Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift)
             {
                 btnEditBreak_Click(sender, e);
+                e.Handled = true;
             }
         }
 

@@ -65,7 +65,8 @@
                     Click="btnBrowse_Click"/>
         </StackPanel>
         <StackPanel Grid.Row="4" Orientation="Horizontal"  HorizontalAlignment="Stretch">
-            <CheckBox Content="出力完了時にフォルダを開く"
+            <CheckBox x:Name="isOpenExportFolder"
+                Content="出力完了時にフォルダを開く"
                       Margin="20,5,0,5"
                       VerticalAlignment="Center"
                       Foreground="#FFF"/>
@@ -91,7 +92,6 @@
             Grid.Row="7"
             Margin="20,0,20,0"
             Name="Log"
-            SyntaxHighlighting="Json"
             FontFamily="Consolas"
             FontSize="10pt"
             IsReadOnly="True"

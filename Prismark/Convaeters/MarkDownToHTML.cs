@@ -14,8 +14,7 @@ namespace Prismark.Convaeters
         public MarkDownToHTML() { }
         public string ToUnitHtml(string md)
         {
-            var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
-            string htmlContent = Markdown.ToHtml(md, pipeline);
+            string htmlContent = ConvertMarkdownToHtml(md);
             string css = GetEmbeddedResourceContent("Prismark.Base.style.css");
             htmlContent = $@"
 <!DOCTYPE html>
@@ -45,20 +44,87 @@ namespace Prismark.Convaeters
             }
         }
 
-    }
-    class PageInfo
-    {
-        public string Number { get; set; }
-        public string Title { get; set; }
-        public string Content { get; set; }
-    }
+        private string ConvertMarkdownToHtml(string markdown)
+        {
+            var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
+            // 改行コードを正規化
+            markdown = Regex.Replace(markdown, "\r\n?", "\n");
 
-    class AppConfig
-    {
-        public string MarkdownDirectory { get; set; }
-        public string OutputJsPath { get; set; }
-        public string TemplateJsPath { get; set; }
-        public bool ShowNumbers { get; set; }
-    }
+            StringBuilder result = new StringBuilder();
+            bool inCodeBlock = false;
+            bool inTable = false;
+            string[] lines = markdown.Split('\n');
 
+            for (int i = 0; i < lines.Length; i++)
+            {
+                string line = lines[i];
+                string nextLine = i < lines.Length - 1 ? lines[i + 1] : "";
+
+                // コードブロックの開始/終了をチェック
+                if (line.StartsWith("```") || line.StartsWith("~~~"))
+                {
+                    inCodeBlock = !inCodeBlock;
+                    result.AppendLine(line);
+                    continue;
+                }
+
+                // コードブロック内の場合は変更せずにそのまま追加
+                if (inCodeBlock)
+                {
+                    result.AppendLine(line);
+                    continue;
+                }
+
+                // テーブルの開始をチェック
+                if (!inTable && line.Contains("|") && nextLine.Replace(" ", "").Replace("|", "").Replace("-", "").Length == 0)
+                {
+                    inTable = true;
+                    result.AppendLine(line);
+                    continue;
+                }
+
+                // テーブル内の処理
+                if (inTable)
+                {
+                    result.AppendLine(line);
+                    // テーブルの終了をチェック（次の行が空行またはテーブル形式でない場合）
+                    if (string.IsNullOrWhiteSpace(nextLine) || !nextLine.Contains("|"))
+                    {
+                        inTable = false;
+                    }
+                    continue;
+                }
+
+                // 箇条書きや引用のチェック
+                if (Regex.IsMatch(line, @"^(\s*[-*+]|\d+\.|\>)\s"))
+                {
+                    result.AppendLine(line);
+                    continue;
+                }
+
+                // 空行のチェック
+                if (string.IsNullOrWhiteSpace(line))
+                {
+                    result.AppendLine(line);
+                    continue;
+                }
+
+                // 単一の改行を<br>に変換
+                if (i < lines.Length - 1 && !string.IsNullOrWhiteSpace(lines[i + 1]))
+                {
+                    result.AppendLine(line + "  ");
+                }
+                else
+                {
+                    result.AppendLine(line);
+                }
+            }
+
+            // マークダウンをHTMLに変換
+            string html = Markdown.ToHtml(result.ToString(), pipeline);
+
+            // 結果をHTMLドキュメントにラップ
+            return html;
+        }
+    }
 }
