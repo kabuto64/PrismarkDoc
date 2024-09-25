@@ -21,9 +21,9 @@ using System.Diagnostics;
 using System.Configuration;
 using IWshRuntimeLibrary;
 using System.Reflection;
-using Prismark.Resources.StartUp;
+using Prismark.UI.StartUp;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
-using Prismark.Resources.Pages;
+using Prismark.UI.Pages;
 
 namespace Prismark
 {
@@ -96,7 +96,7 @@ namespace Prismark
                 }
                 else
                 {
-                    Type pageType = Type.GetType($"Prismark.Resources.Pages.{pageName}");
+                    Type pageType = Type.GetType($"Prismark.UI.Pages.{pageName}");
                     if (pageType != null)
                     {
                         var newPage = (Page)Activator.CreateInstance(pageType);
@@ -109,7 +109,7 @@ namespace Prismark
 
         private void NavigateToSettings(object sender, RoutedEventArgs e)
         {
-            MainFrame.Navigate(new Resources.Pages.Setting());
+            MainFrame.Navigate(new UI.Pages.Setting());
         }
 
         private void MainFrame_Navigated(object sender, NavigationEventArgs e)

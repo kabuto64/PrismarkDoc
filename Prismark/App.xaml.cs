@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.IO;
 using Prismark.Utils;
-using Prismark.Resources.StartUp;
+using Prismark.UI.StartUp;
 
 namespace Prismark
 {
@@ -39,7 +39,6 @@ namespace Prismark
             try
             {
                 string projectPath = GetProjectPathFromCommandLine();
-
                 if (!string.IsNullOrEmpty(projectPath) && Directory.Exists(projectPath))
                 {
                     await InitializeWithProjectPath(projectPath);
@@ -60,7 +59,7 @@ namespace Prismark
         private string GetProjectPathFromCommandLine()
         {
             var args = Environment.GetCommandLineArgs();
-            int projectIndex = Array.IndexOf(args, "--project");
+            int projectIndex = Array.IndexOf(args, "--from-launcher");
             return (projectIndex != -1 && args.Length > projectIndex + 1) ? args[projectIndex + 1] : null;
         }
 
@@ -91,6 +90,8 @@ namespace Prismark
 
         private async Task SaveLastWorkingDirectory(string directory)
         {
+            Utils.ProjectManager.CreateProjectLauncher(this.WorkingFolder, this.ProjectName);
+
             Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
             config.AppSettings.Settings["LastWorkingDirectory"].Value = directory;
             await Task.Run(() => config.Save(ConfigurationSaveMode.Modified));

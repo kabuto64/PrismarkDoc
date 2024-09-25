@@ -143,42 +143,40 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="Convaeters\MarkDownToHTML.cs" />
-    <Compile Include="Resources\Modal\CustomOkCancelDialog.xaml.cs">
+    <Compile Include="UI\Modal\CustomOkCancelDialog.xaml.cs">
       <DependentUpon>CustomOkCancelDialog.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Resources\Modal\FileNameInputDialog.xaml.cs">
+    <Compile Include="UI\Modal\FileNameInputDialog.xaml.cs">
       <DependentUpon>FileNameInputDialog.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Resources\Modal\TableSelectDialog.xaml.cs">
+    <Compile Include="UI\Modal\TableSelectDialog.xaml.cs">
       <DependentUpon>TableSelectDialog.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Resources\Pages\Editor.xaml.cs">
+    <Compile Include="UI\Pages\Editor.xaml.cs">
       <DependentUpon>Editor.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Resources\Pages\Export.xaml.cs">
+    <Compile Include="UI\Pages\Export.xaml.cs">
       <DependentUpon>Export.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Resources\Pages\Setting.xaml.cs">
+    <Compile Include="UI\Pages\Setting.xaml.cs">
       <DependentUpon>Setting.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Resources\StartUp\Open.xaml.cs">
+    <Compile Include="UI\StartUp\Open.xaml.cs">
       <DependentUpon>Open.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Resources\StartUp\Register.xaml.cs">
+    <Compile Include="UI\StartUp\Register.xaml.cs">
       <DependentUpon>Register.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Resources\StartUp\Start.xaml.cs">
+    <Compile Include="UI\StartUp\Start.xaml.cs">
       <DependentUpon>Start.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Resources\StartUp\StartUpWindow.xaml.cs">
+    <Compile Include="UI\StartUp\StartUpWindow.xaml.cs">
       <DependentUpon>StartUpWindow.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="UserControls\CustomIconButton.xaml.cs">
-      <DependentUpon>CustomIconButton.xaml</DependentUpon>
     </Compile>
     <Compile Include="Utils\DialogBase.cs" />
     <Compile Include="Utils\LocalHttpServer.cs" />
+    <Compile Include="Utils\MarkDownToHTML.cs" />
+    <Compile Include="Utils\ProjectManager.cs" />
     <Compile Include="Utils\UndoRedoManager.cs" />
     <Page Include="Icons\ButtonIcons.xaml">
       <SubType>Designer</SubType>
@@ -196,47 +194,43 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Page Include="Resources\Modal\CustomOkCancelDialog.xaml">
+    <Page Include="UI\Modal\CustomOkCancelDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Resources\Modal\FileNameInputDialog.xaml">
+    <Page Include="UI\Modal\FileNameInputDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Resources\Modal\TableSelectDialog.xaml">
+    <Page Include="UI\Modal\TableSelectDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Resources\Pages\Editor.xaml">
+    <Page Include="UI\Pages\Editor.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Resources\Pages\Export.xaml">
+    <Page Include="UI\Pages\Export.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Resources\Pages\Setting.xaml">
+    <Page Include="UI\Pages\Setting.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Resources\StartUp\Open.xaml">
+    <Page Include="UI\StartUp\Open.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Resources\StartUp\Register.xaml">
+    <Page Include="UI\StartUp\Register.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Resources\StartUp\Start.xaml">
+    <Page Include="UI\StartUp\Start.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Resources\StartUp\StartUpWindow.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="UserControls\CustomIconButton.xaml">
+    <Page Include="UI\StartUp\StartUpWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -265,7 +259,7 @@
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
-    <EmbeddedResource Include="Resources\Themes\MarkdownDark.xshd" />
+    <EmbeddedResource Include="UI\Themes\MarkdownDark.xshd" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
@@ -286,17 +280,11 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Base\script.js">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Base\style.css">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </EmbeddedResource>
+    <EmbeddedResource Include="Resources\script.js" />
+    <EmbeddedResource Include="Resources\style.css" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Base\index.html">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </EmbeddedResource>
+    <EmbeddedResource Include="Resources\index.html" />
   </ItemGroup>
   <ItemGroup>
     <COMReference Include="IWshRuntimeLibrary">
@@ -311,6 +299,15 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Images\" />
+    <Folder Include="UserControls\" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\LaunchProject.exe" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\highlightjs\atom-one-dark.min.css" />
+    <EmbeddedResource Include="Resources\highlightjs\highlight.js" />
+    <EmbeddedResource Include="Resources\highlightjs\highlightjs-line-numbers.js" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\packages\Microsoft.Web.WebView2.1.0.2592.51\build\Microsoft.Web.WebView2.targets" Condition="Exists('..\packages\Microsoft.Web.WebView2.1.0.2592.51\build\Microsoft.Web.WebView2.targets')" />
