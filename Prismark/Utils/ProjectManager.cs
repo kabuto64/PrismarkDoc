@@ -13,6 +13,7 @@ namespace Prismark.Utils
     {
         public static void CreateProjectLauncher(string projectPath, string projectName)
         {
+            if (string.IsNullOrEmpty(projectPath) || string.IsNullOrEmpty(projectName)) return;
             // プロジェクト名に基づいて実行ファイル名を生成
             string launcherFileName = $"{projectName}.exe";
             string launcherPath = Path.Combine(projectPath, launcherFileName);
