@@ -42,15 +42,14 @@ namespace Prismark.UI.Modal
         }
         private string GetUniqueFilePath(string directory, string baseFileName)
         {
-            string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(baseFileName);
             string extension = ".md";
-            string filePath = Path.Combine(directory,"md", fileNameWithoutExtension + extension);
-            string resultFileName = fileNameWithoutExtension;
+            string filePath = Path.Combine(directory,"md", baseFileName + extension);
+            string resultFileName = Path.GetFileNameWithoutExtension(filePath);
             int counter = 1;
 
             while (File.Exists(filePath))
             {
-                resultFileName = $"{fileNameWithoutExtension}_{counter}";
+                resultFileName = $"{resultFileName}_{counter}";
                 filePath = Path.Combine(directory, "md", resultFileName + extension);
 
                 counter++;

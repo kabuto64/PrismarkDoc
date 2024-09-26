@@ -13,7 +13,6 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
-using System.Windows.Shapes;
 using System.Xml;
 using ICSharpCode.AvalonEdit;
 using ICSharpCode.AvalonEdit.Highlighting.Xshd;
@@ -26,6 +25,8 @@ using System.Diagnostics;
 using System.Threading;
 using System.Windows.Controls.Primitives;
 using Prismark.UI.Modal;
+using System.Windows.Threading;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox;
 
 namespace Prismark.UI.Pages
 {
@@ -39,24 +40,74 @@ namespace Prismark.UI.Pages
 
         private bool _isSwitchingTextChanged = false;
 
-        private Dictionary<string, string> fileContents = new Dictionary<string, string>();
-        private List<Button> fileButtons = new List<Button>();
+        private List<Button> _fileButtons = new List<Button>();
+        private List<ProjectFile> _projectFiles = new List<ProjectFile>();
+        private List<ProjectFile> _restoreProjectFiles;
+
+        private DispatcherTimer saveTimer;
+        private const int SaveIntervalMilliseconds = 500;
 
         private int _currentLine;
         private int _currentColumn;
 
-        private List<Color> _predefinedColors;
-        private App _app = System.Windows.Application.Current as App;
+        private App _app = Application.Current as App;
 
         private UndoRedoManager undoRedoManager = new UndoRedoManager();
 
         #endregion
 
-
         public Editor()
         {
+            _restoreProjectFiles = ProjectManager.ReadProjectInfo(_app.WorkingFolder).ProjectFiles.ToList();
             InitializeComponent();
+            InitializePage();
+            SetupSaveTimer();
+        }
 
+        #region 初期処理系
+        private void Page_Loaded(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // 異常セッションの復元
+                if (_app.IsAbnormalClose)
+                {
+                    UI.Modal.CustomOkCancelDialog dialog = new CustomOkCancelDialog("前回異常終了したセッションを復元しますか？");
+                    dialog.Owner = Window.GetWindow(this);
+                    if (dialog.ShowDialog() == true)
+                    {
+                        foreach (var restoreItem in _restoreProjectFiles)
+                        {
+                            ProjectFile file = GetProjectFile(restoreItem.FileName);
+                            if(file != null)
+                            {
+                                bool isModify = file.Content != restoreItem.Content;
+                                file.Content = restoreItem.Content;
+                                file.IsInit = true;
+                                file.IsSaved = !isModify;
+                                file.IsInit = !isModify;
+                                UpdateFileButtonState(
+                                    Path.Combine(_app.WorkingFolder,"md", file.FileName + ".md"),
+                                    isModify
+                                    );
+                            }
+                        }
+                        UpdateProjectFile();
+
+                        MarkDownEditor.Text = GetProjectFile(Path.GetFileNameWithoutExtension(_currentFilePath)).Content;
+                    }
+                    _app.IsAbnormalClose = false;
+                }
+                
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"プロジェクトのリフレッシュに失敗しました: {ex.Message}");
+            }
+            
+        }
+        private void InitializePage()
+        {
             // シンタックスハイライト定義ファイルを読み込む
             var assembly = Assembly.GetExecutingAssembly();
             using (Stream s = assembly.GetManifestResourceStream("Prismark.UI.Themes.MarkdownDark.xshd"))
@@ -66,21 +117,16 @@ namespace Prismark.UI.Pages
                     MarkDownEditor.SyntaxHighlighting = HighlightingLoader.Load(reader, HighlightingManager.Instance);
                 }
             }
-
             // テキスト変更時のイベントハンドラを設定
             MarkDownEditor.TextChanged += MarkDownEditor_TextChanged;
             MarkDownEditor.TextArea.Caret.PositionChanged += Caret_PositionChanged;
             this.KeyDown += Editor_KeyDown;
-
-            // 規定の色リストを初期化
-            InitializePredefinedColors();
 
             // プロジェクト名を設定
             txtProjectName.Text = _app.ProjectName;
 
             // mdファイルを参照して、ボタンを配置する
             CreateFileButtons();
-
             InitializeAsync();
 
             // すべてのマウスダウンイベントをキャプチャ
@@ -88,11 +134,6 @@ namespace Prismark.UI.Pages
                 Mouse.MouseDownEvent,
                 new MouseButtonEventHandler(OnMouseDown),
                 true);
-        }
-        
-        private void Page_Loaded(object sender, RoutedEventArgs e)
-        {
-            
         }
         async void InitializeAsync()
         {
@@ -111,38 +152,75 @@ namespace Prismark.UI.Pages
             {
                 System.Windows.MessageBox.Show(ex.Message);
             }
-            
-        }
-        /// <summary>
-        /// カラーピッカーのデフォルトカラー
-        /// </summary>
-        private void InitializePredefinedColors()
-        {
-            _predefinedColors = new List<Color>
-            {
-                Colors.Red, Colors.Blue, Colors.Green, Colors.Yellow,
-                Colors.Orange, Colors.Purple, Colors.Pink, Colors.Brown,
-                Colors.Gray, Colors.Black, Colors.White, Colors.Cyan
-            };
-            //PredefinedColorsList.ItemsSource = _predefinedColors.Select(c => new SolidColorBrush(c));
+
         }
         private void InitializeFirstFile()
         {
-            if (fileButtons.Count > 0)
+            if (_fileButtons.Count > 0)
             {
                 // 最初のボタンに対応するファイルを表示
-                string firstFilePath = (string)fileButtons[0].Tag;
+                string firstFilePath = (string)_fileButtons[0].Tag;
                 SwitchFile(firstFilePath);
-                ButtonHighLightChange(fileButtons[0]);
-                
+                ButtonHighLightChange(_fileButtons[0]);
+
             }
             else
             {
                 System.Windows.MessageBox.Show("表示可能なファイルがありません。");
             }
         }
+        
 
-        #region ファイル操作関連（ファイルボタンボタン生成も含む）
+        #endregion
+
+        #region プロジェクトクラス管理マネジャー
+        public void UpdateProjectFile(ProjectFile file)
+        {
+            var existingFile = _projectFiles.FirstOrDefault(f => f.FileName == file.FileName);
+
+            if (existingFile != null)
+            {
+                existingFile.Section = file.Section;
+                existingFile.Content = file.Content;
+                existingFile.IsSaved = file.IsSaved;
+            }
+            else
+            {
+                _projectFiles.Add(file);
+            }
+            ProjectInfo info = ProjectManager.ReadProjectInfo(_app.WorkingFolder);
+            info.ProjectFiles = _projectFiles;
+            ProjectManager.WriteProjectInfo(info);
+        }
+        public async void UpdateProjectFile()
+        {
+            await Task.Run(() => {
+                ProjectInfo info = ProjectManager.ReadProjectInfo(_app.WorkingFolder);
+                info.ProjectFiles = _projectFiles;
+                ProjectManager.WriteProjectInfo(info);
+            });
+        }
+        public ProjectFile GetProjectFile(string fileName)
+        {
+            var existingFile = _projectFiles.FirstOrDefault(f => f.FileName == fileName);
+            return existingFile;
+        }
+        private void SetupSaveTimer()
+        {
+            saveTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromMilliseconds(SaveIntervalMilliseconds)
+            };
+            saveTimer.Tick += SaveTimer_Tick;
+        }
+        private void SaveTimer_Tick(object sender, EventArgs e)
+        {
+            saveTimer.Stop();
+            UpdateProjectFile();
+        }
+        #endregion
+
+        #region 左ペインファイルボタン関連
         /// <summary>
         /// mdフォルダ内のmdファイル分、ボタンを生成する
         /// </summary>
@@ -160,6 +238,13 @@ namespace Prismark.UI.Pages
             foreach (string file in files)
             {
                 CreateFileButton(file);
+                UpdateProjectFile(
+                    new ProjectFile {
+                        Content = File.ReadAllText(file),
+                        FileName = Path.GetFileNameWithoutExtension(file),
+                        IsInit = true,
+                        IsSaved = true,
+                    });
             }
             SortButtons("Name");
         }
@@ -180,8 +265,7 @@ namespace Prismark.UI.Pages
                 SwitchFile((string)((Button)sender).Tag);
                 ButtonHighLightChange(button);
             };
-
-            fileButtons.Add(button);
+            _fileButtons.Add(button);
         }
         /// <summary>
         /// ファイルボタン押下時の表示切替
@@ -192,28 +276,19 @@ namespace Prismark.UI.Pages
             _isSwitchingTextChanged = true;
             try
             {
-                // 現在の内容を保存
-                if (!string.IsNullOrEmpty(_currentFilePath))
-                {
-                    fileContents[_currentFilePath] = MarkDownEditor.Text;
-                }
-
                 _currentFilePath = newFilePath;
                 //Undo Redo
                 undoRedoManager.SetCurrentFile(newFilePath); // 現在のファイルを設定
 
-                // 新しいファイルの内容を読み込む
-                if (fileContents.ContainsKey(newFilePath))
+                var file = GetProjectFile(Path.GetFileNameWithoutExtension(newFilePath));
+                if (file.IsInit)
                 {
-                    // メモリ内データが存在すればそれを表示
-                    MarkDownEditor.Text = fileContents[newFilePath];
+                    LoadFileContent(newFilePath);
+                    undoRedoManager.SetInitialState(MarkDownEditor.Text, MarkDownEditor.CaretOffset);
                 }
                 else
                 {
-                    // そうでなければ、ファイルから表示
-                    LoadFileContent(newFilePath);
-                    // ファイル読み込み後に初期状態を設定
-                    undoRedoManager.SetInitialState(MarkDownEditor.Text, MarkDownEditor.CaretOffset);
+                    MarkDownEditor.Text = file.Content;
                 }
                 
                 UpdateUndoRedoButtons();
@@ -235,7 +310,8 @@ namespace Prismark.UI.Pages
             {
                 string content = File.ReadAllText(filePath);
                 MarkDownEditor.Text = content;
-                fileContents[filePath] = content;
+                ProjectFile file = GetProjectFile(Path.GetFileNameWithoutExtension(filePath));
+                file.Content = content;
             }
             catch (Exception ex)
             {
@@ -249,7 +325,7 @@ namespace Prismark.UI.Pages
         /// <param name="isModified"></param>
         private void UpdateFileButtonState(string filePath, bool isModified)
         {
-            var button = fileButtons.FirstOrDefault(b => (string)b.Tag == filePath);
+            var button = _fileButtons.FirstOrDefault(b => (string)b.Tag == filePath);
             if (button != null)
             {
                 ButtonProperties.SetIsModified(button, isModified);
@@ -265,11 +341,13 @@ namespace Prismark.UI.Pages
                 System.Windows.MessageBox.Show("保存するファイルが選択されていません。");
                 return;
             }
-
             try
             {
                 File.WriteAllText(_currentFilePath, MarkDownEditor.Text);
-                fileContents[_currentFilePath] = MarkDownEditor.Text; // 保存した内容をディクショナリにも反映
+                ProjectFile file = GetProjectFile(Path.GetFileNameWithoutExtension(_currentFilePath));
+                file.Content = MarkDownEditor.Text;
+                file.IsSaved = true;
+                UpdateProjectFile();
                 if (_currentFilePath != null)
                 {
                     UpdateFileButtonState(_currentFilePath, false);
@@ -279,6 +357,60 @@ namespace Prismark.UI.Pages
             {
                 System.Windows.MessageBox.Show($"ファイルの保存に失敗しました: {ex.Message}");
             }
+        }
+        /// <summary>
+        /// ボタンをソートオプションによって配置する
+        /// </summary>
+        /// <param name="sortOption"></param>
+        private void SortButtons(string sortOption)
+        {
+            IEnumerable<Button> sortedButtons;
+
+            if (sortOption == "Name")
+            {
+                sortedButtons = _fileButtons.OrderBy(b => b.Content.ToString());
+            }
+            else
+            {
+                sortedButtons = _fileButtons.OrderByDescending(b => File.GetLastWriteTime((string)b.Tag));
+            }
+
+            pnlMdFiles.Children.Clear();
+
+            foreach (var button in sortedButtons)
+            {
+                pnlMdFiles.Children.Add(button);
+            }
+        }
+        /// <summary>
+        /// ファイル名ボタンのハイライト制御
+        /// </summary>
+        /// <param name="button"></param>
+        private void ButtonHighLightChange(Button button)
+        {
+            foreach (var item in _fileButtons)
+            {
+                SetButtonHighLight(item, false);
+            }
+            SetButtonHighLight(button, true);
+        }
+        private void SetButtonHighLight(Button button, bool isHighlighted)
+        {
+            Color backcolor = (Color)ColorConverter.ConvertFromString("#0295ff");
+            SolidColorBrush backbrush = new SolidColorBrush(backcolor);
+            button.Background = isHighlighted ? backbrush : Brushes.Transparent;
+        }
+        #endregion
+
+        #region ファイル関連
+        /// <summary>
+        /// 保存ボタン
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void btnSave_Click(object sender, RoutedEventArgs e)
+        {
+            SaveFile();
         }
         /// <summary>
         /// ファイルの追加
@@ -297,15 +429,22 @@ namespace Prismark.UI.Pages
                 try
                 {
                     string documentsPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-                    string filePath = System.IO.Path.Combine(_app.WorkingFolder,"md",fileName);
+                    string filePath = System.IO.Path.Combine(_app.WorkingFolder, "md", fileName);
                     File.WriteAllText(filePath, content);
 
-                    
+                    UpdateProjectFile(new ProjectFile
+                    {
+                        FileName = Path.GetFileNameWithoutExtension(filePath),
+                        Content = content,
+                        IsSaved = true,
+                        IsInit = true
+                    });
+
                     CreateFileButton(filePath);
                     SortButtons("Name");
                     SwitchFile(filePath);
 
-                    var button = fileButtons.FirstOrDefault(b => (string)b.Tag == filePath);
+                    var button = _fileButtons.FirstOrDefault(b => (string)b.Tag == filePath);
                     ButtonHighLightChange(button);
                 }
                 catch (Exception ex)
@@ -314,53 +453,6 @@ namespace Prismark.UI.Pages
                 }
             }
         }
-        /// <summary>
-        /// ボタンをソートオプションによって配置する
-        /// </summary>
-        /// <param name="sortOption"></param>
-        private void SortButtons(string sortOption)
-        {
-            IEnumerable<Button> sortedButtons;
-
-            if (sortOption == "Name")
-            {
-                sortedButtons = fileButtons.OrderBy(b => b.Content.ToString());
-            }
-            else
-            {
-                sortedButtons = fileButtons.OrderByDescending(b => File.GetLastWriteTime((string)b.Tag));
-            }
-
-            pnlMdFiles.Children.Clear();
-            //pnlMdFiles.Children.Add((UIElement)pnlMdFiles.Children[0]); // ComboBoxを再追加
-
-            foreach (var button in sortedButtons)
-            {
-                pnlMdFiles.Children.Add(button);
-            }
-        }
-
-        /// <summary>
-        /// ファイル名ボタンのハイライト制御
-        /// </summary>
-        /// <param name="button"></param>
-        private void ButtonHighLightChange(Button button)
-        {
-            foreach (var item in fileButtons)
-            {
-                SetButtonHighLight(item, false);
-            }
-            SetButtonHighLight(button, true);
-        }
-        private void SetButtonHighLight(Button button, bool isHighlighted)
-        {
-            Color backcolor = (Color)ColorConverter.ConvertFromString("#0295ff");
-            SolidColorBrush backbrush = new SolidColorBrush(backcolor);
-            button.Background = isHighlighted ? backbrush : Brushes.Transparent;
-        }
-        #endregion
-
-        #region ボタンクリックイベント
         /// <summary>
         /// 全てのファイルを保存
         /// </summary>
@@ -374,11 +466,15 @@ namespace Prismark.UI.Pages
             {
                 try
                 {
-                    foreach (var item in fileContents)
+                    foreach (var item in _projectFiles.ToList())
                     {
-                        File.WriteAllText(item.Key, item.Value);
-                        UpdateFileButtonState(item.Key, false);
+                        string key = Path.Combine(_app.WorkingFolder, "md", item.FileName + ".md");
+                        File.WriteAllText(key, item.Content);
+                        UpdateFileButtonState(key, false);
+                        ProjectFile file = GetProjectFile(item.FileName);
+                        file.IsSaved = true;
                     }
+                    UpdateProjectFile();
                 }
                 catch (Exception ex)
                 {
@@ -399,25 +495,31 @@ namespace Prismark.UI.Pages
             {
                 try
                 {
-                    foreach (var item in fileContents.ToList())
+                    foreach (var item in _projectFiles.ToList())
                     {
-                        if (item.Key == _currentFilePath)
+                        string key = Path.Combine(_app.WorkingFolder, "md", item.FileName + ".md");
+                        if (key == _currentFilePath)
                         {
-                            if(File.Exists(item.Key)){
-                                MarkDownEditor.Text = File.ReadAllText(item.Key);
+                            if (File.Exists(key))
+                            {
+                                MarkDownEditor.Text = File.ReadAllText(key);
                             }
                         }
-                        if (File.Exists(item.Key))
+                        if (File.Exists(key))
                         {
-                            fileContents[item.Key] = File.ReadAllText(item.Key);
+                            ProjectFile file = GetProjectFile(item.FileName);
+                            file.Content = File.ReadAllText(key);
+                            file.IsSaved = true;
                         }
                         else
                         {
-                            fileContents.Remove(item.Key);
+                            _projectFiles.Remove(GetProjectFile(item.FileName));
                         }
                     }
+                    UpdateProjectFile();
+
                     pnlMdFiles.Children.Clear();
-                    fileButtons.Clear();
+                    _fileButtons.Clear();
                     CreateFileButtons();
                     InitializeFirstFile();
                 }
@@ -466,9 +568,13 @@ namespace Prismark.UI.Pages
                     
                     _currentFilePath = newFilePath;
                     btnFileName.Content = dialog.ModifiedFileName.Trim();
-                    fileContents[_currentFilePath] = MarkDownEditor.Text;
 
-                    var button = fileButtons.FirstOrDefault(b => (string)b.Tag == oldFilePath);
+                    ProjectFile file = GetProjectFile(Path.GetFileNameWithoutExtension(oldFilePath));
+                    file.Content = MarkDownEditor.Text;
+                    file.FileName = Path.GetFileNameWithoutExtension(newFilePath);
+                    UpdateProjectFile();
+
+                    var button = _fileButtons.FirstOrDefault(b => (string)b.Tag == oldFilePath);
                     if (button != null)
                     {
                         button.Tag = newFilePath;
@@ -484,41 +590,48 @@ namespace Prismark.UI.Pages
         }
         #endregion
 
-
-        private void ToggleMenu_Click(object sender, RoutedEventArgs e)
-        {
-            if (LeftColumn.Width.Value > 50)
-            {
-                LeftColumn.Width = new GridLength(50);
-            }
-            else
-            {
-                LeftColumn.Width = new GridLength(200);
-            }
-        }
-
+        #region テキストエディター関連
+        /// <summary>
+        /// エディター変更時イベント
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void MarkDownEditor_TextChanged(object sender, EventArgs e)
         {
-            PreviewShow();
-            StatusBarChange();
-            if (_currentFilePath != null && !_isSwitchingTextChanged)
+            saveTimer.Stop();
+            saveTimer.Start();
+
+            PreviewShow();      // プレビュー表示
+            StatusBarChange();  // Word,Line,Col
+
+            ProjectFile file = GetProjectFile(Path.GetFileNameWithoutExtension(_currentFilePath));
+
+            if (_currentFilePath != null && !_isSwitchingTextChanged) // ファイル切り替えによるテキストチェンジを検知
             {
-                UpdateFileButtonState(_currentFilePath, true);
                 undoRedoManager.RecordState(MarkDownEditor.Text, MarkDownEditor.CaretOffset);
+                file.IsInit = false;
             }
             if(File.ReadAllText(_currentFilePath) == MarkDownEditor.Text)
             {
+                // 保存データとカレントデータが一致していればいれば保存済みマークを表示
+                file.IsSaved = true;
+                file.Content = MarkDownEditor.Text;
                 UpdateFileButtonState(_currentFilePath, false);
             }
+            else
+            {
+                file.IsSaved = false;
+                file.Content = MarkDownEditor.Text;
+                UpdateFileButtonState(_currentFilePath, true);
+            }
             UpdateUndoRedoButtons();
+            UpdateProjectFile(file);
         }
         private void Caret_PositionChanged(object sender, EventArgs e)
         {
             StatusBarChange();
         }
-
-
-        private void PreviewShow()
+        private async void PreviewShow()
         {
             string markdown = MarkDownEditor.Text;
             Utils.MarkDownToHTML conv = new Utils.MarkDownToHTML();
@@ -526,6 +639,56 @@ namespace Prismark.UI.Pages
             string modifiedHtml = _app.LocalHttpServer.ReplaceMediaPaths(conv.ToUnitHtml(markdown));
 
             webView.NavigateToString(modifiedHtml);
+        }
+        private void MarkDownEditor_Loaded(object sender, RoutedEventArgs e)
+        {
+            ScrollViewer scrollViewer = FindScrollViewer(MarkDownEditor);
+            if (scrollViewer != null)
+            {
+                scrollViewer.ScrollChanged += ScrollViewer_ScrollChanged;
+            }
+        }
+
+
+        double scrollPercentage;
+        private async void ScrollViewer_ScrollChanged(object sender, ScrollChangedEventArgs e)
+        {
+            // スクロール位置が変更されたときの処理
+            double verticalOffset = e.VerticalOffset;
+            double horizontalOffset = e.HorizontalOffset;
+
+            if (webView.CoreWebView2 != null)
+            {
+                // スクロール位置の計算（0から1の範囲に正規化）
+                scrollPercentage = e.VerticalOffset / (e.ExtentHeight - e.ViewportHeight);
+
+                // JavaScriptを使用してWebView2をスクロール
+                await webView.CoreWebView2.ExecuteScriptAsync($@"
+                    var contentHeight = document.body.scrollHeight;
+                    var windowHeight = window.innerHeight;
+                    var scrollPosition = (contentHeight - windowHeight) * {scrollPercentage};
+                    window.scrollTo(0, scrollPosition);
+                ");
+            }
+        }
+
+        private ScrollViewer FindScrollViewer(DependencyObject depObj)
+        {
+            if (depObj is ScrollViewer)
+                return depObj as ScrollViewer;
+
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(depObj); i++)
+            {
+                var child = VisualTreeHelper.GetChild(depObj, i);
+                var result = FindScrollViewer(child);
+                if (result != null)
+                    return result;
+            }
+            return null;
+        }
+        private async void MarkDownEditor_ScrollChanged(object sender, ScrollChangedEventArgs e)
+        {
+            
         }
         private void StatusBarChange()
         {
@@ -537,15 +700,7 @@ namespace Prismark.UI.Pages
             Lines.Text = $"Lines: {_currentLine}";
             Col.Text = $"Col: {_currentColumn}";
         }
-        /// <summary>
-        /// 保存ボタン
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void btnSave_Click(object sender, RoutedEventArgs e)
-        {
-            SaveFile();
-        }
+        #endregion
 
         #region マークダウン適用ロジック
         /// <summary>
@@ -937,17 +1092,7 @@ namespace Prismark.UI.Pages
         }
         #endregion
 
-
-        private void ColorCanvas_SelectedColorChanged(object sender, RoutedPropertyChangedEventArgs<Color?> e)
-        {
-            if (e.NewValue.HasValue)
-            {
-                Color selectedColor = e.NewValue.Value;
-                string hexColor = $"#{selectedColor.R:X2}{selectedColor.G:X2}{selectedColor.B:X2}";
-                ColorTextBox.Text = hexColor;
-                btnEditColor.Foreground = (Brush)new BrushConverter().ConvertFrom(hexColor);
-            }
-        }
+        #region ショートカットキー
         /// <summary>
         /// ショートカットキーの定義
         /// </summary>
@@ -962,7 +1107,7 @@ namespace Prismark.UI.Pages
                 e.Handled = true; // イベントが処理されたことを示す
             }
             // Ctlr+Shift+S:すべて保存
-            if(e.Key == Key.S &&
+            if (e.Key == Key.S &&
                 (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control &&
                 (Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift)
             {
@@ -972,7 +1117,7 @@ namespace Prismark.UI.Pages
             // Ctlr+N:新規ファイル
             if (e.Key == Key.N && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
             {
-                AddNewFile(sender,e);
+                AddNewFile(sender, e);
                 e.Handled = true; // イベントが処理されたことを示す
             }
 
@@ -1035,7 +1180,9 @@ namespace Prismark.UI.Pages
                 e.Handled = true;
             }
         }
+        #endregion
 
+        #region Undo/Redo関連
         /// <summary>
         /// 元に戻すボタン押下時
         /// </summary>
@@ -1088,7 +1235,6 @@ namespace Prismark.UI.Pages
                 UpdateUndoRedoButtons();
             }
         }
-        
         private void UpdateUndoRedoButtons()
         {
             btnUndo.IsEnabled = undoRedoManager.CanUndo();
@@ -1104,8 +1250,6 @@ namespace Prismark.UI.Pages
 
             e.Handled = true; // イベントが処理されたことを示す
         }
-
-
         private void RedoCommandBinding_Executed(object sender, ExecutedRoutedEventArgs e)
         {
             if (btnRedo.IsEnabled)
@@ -1115,8 +1259,9 @@ namespace Prismark.UI.Pages
             e.Handled = true; // イベントが処理されたことを示す
         }
 
-        
+        #endregion
 
+        #region カラーピッカー関連
         /// <summary>
         /// カラーピッカー関連
         /// </summary>
@@ -1163,13 +1308,13 @@ namespace Prismark.UI.Pages
                 return "#FFFFFFFF";
             }
         }
-
         public static string ConvertWpfColorToHtml(Color wpfColor)
         {
             return $"#{wpfColor.R:X2}{wpfColor.G:X2}{wpfColor.B:X2}{wpfColor.A:X2}";
         }
-
     }
+
+    #endregion
 
     public static class ButtonProperties
     {
@@ -1190,5 +1335,4 @@ namespace Prismark.UI.Pages
             return (bool)element.GetValue(IsModifiedProperty);
         }
     }
-
 }

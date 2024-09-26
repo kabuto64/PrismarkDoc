@@ -9,7 +9,7 @@
         AllowsTransparency="True"
         Background="Transparent"
         ResizeMode="CanResizeWithGrip"
-        Title="Prismark Doc" Height="768" Width="1280" MinWidth="1280" Loaded="Window_Loaded">
+        Title="Prismark Doc" Height="768" Width="1280" MinWidth="1280" Loaded="Window_Loaded" Closing="Window_Closing">
     <Window.Resources>
         <Style x:Key="TitleBarButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
@@ -292,12 +292,13 @@
                 <MenuItem Header="新規作成" Click="NewProject"/>
                 <MenuItem Header="開く" Click="OpenProject"/>
                 <MenuItem Header="保存"/>
+                <MenuItem Header="すべて保存"/>
                 <Separator Style="{StaticResource DarkMenuSeparator}"/>
-                <MenuItem Header="エクスポート">
+                <!--<MenuItem Header="エクスポート">
                     <MenuItem Header="HTML"/>
                     <MenuItem Header="Word"/>
                 </MenuItem>
-                <Separator Style="{StaticResource DarkMenuSeparator}"/>
+                <Separator Style="{StaticResource DarkMenuSeparator}"/>-->
                 <MenuItem Header="終了"/>
             </MenuItem>
             <MenuItem Header="編集" Style="{StaticResource DarkMenuItem}">
@@ -308,12 +309,12 @@
                 <MenuItem Header="コピー"/>
                 <MenuItem Header="貼り付け"/>
             </MenuItem>
-            <MenuItem Header="表示" Style="{StaticResource DarkMenuItem}">
+            <!--<MenuItem Header="表示" Style="{StaticResource DarkMenuItem}">
                 <MenuItem Header="プレビュー表示切替"/>
-            </MenuItem>
-            <MenuItem Header="ツール" Style="{StaticResource DarkMenuItem}">
+            </MenuItem>-->
+            <!--<MenuItem Header="ツール" Style="{StaticResource DarkMenuItem}">
                 <MenuItem Header="設定"/>
-            </MenuItem>
+            </MenuItem>-->
         </Menu>
         <!-- 境界線 -->
         <Rectangle Grid.Row="1" Fill="#111"/>

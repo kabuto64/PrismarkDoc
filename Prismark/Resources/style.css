@@ -239,10 +239,6 @@ h1, h2, h3, h4, h5, h6, .header-title {
         padding-right: .5em;
     }
 
-    .content-pane img {
-        border: solid 1px #222;
-    }
-
 .input-output-section {
     display: flex;
     width: 100%;

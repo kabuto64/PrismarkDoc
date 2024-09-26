@@ -185,5 +185,19 @@ namespace Prismark
             Editor editor = new Editor();
             MainFrame.Navigate(editor);
         }
+
+        private void Window_Closing(object sender, CancelEventArgs e)
+        {
+            Utils.ProjectInfo pj = Utils.ProjectManager.ReadProjectInfo(_app.WorkingFolder);
+            if(pj?.ProjectFiles?.Where(r => !r.IsSaved)?.Any() ?? false)
+            {
+                UI.Modal.CustomOkCancelDialog dialog = new UI.Modal.CustomOkCancelDialog("未保存の変更があります。保存せずに終了しますか？");
+                dialog.Owner = this;
+                if(dialog.ShowDialog() == false)
+                {
+                    e.Cancel = true;
+                }
+            }
+        }
     }
 }

@@ -11,6 +11,7 @@ namespace Prismark.Utils
 {
     public class ProjectManager
     {
+        private App _app = System.Windows.Application.Current as App;
         public static void CreateProjectLauncher(string projectPath, string projectName)
         {
             if (string.IsNullOrEmpty(projectPath) || string.IsNullOrEmpty(projectName)) return;
@@ -34,14 +35,22 @@ namespace Prismark.Utils
             File.WriteAllBytes(launcherPath, launcherBytes);
 
             // プロジェクト情報ファイルを作成
-            var projectInfo = new ProjectInfo
-            {
-                MainAppPath = Assembly.GetExecutingAssembly().Location,
-                ProjectPath = projectPath,
-                ProjectName = projectName
-            };
-            string json = JsonConvert.SerializeObject(projectInfo, Formatting.Indented);
-            File.WriteAllText(Path.Combine(projectPath, "ProjectInfo.json"), json);
+            ProjectInfo info = ReadProjectInfo(projectPath);
+            info.MainAppPath = Assembly.GetExecutingAssembly().Location;
+            info.ProjectPath = projectPath;
+            info.ProjectName = projectName;
+            WriteProjectInfo(info);
+        }
+        public static ProjectInfo ReadProjectInfo(string warkingDir)
+        {
+            string jsonString = File.ReadAllText(Path.Combine(warkingDir, "ProjectInfo.json"));
+            ProjectInfo projectInfo = JsonConvert.DeserializeObject<ProjectInfo>(jsonString);
+            return projectInfo;
+        }
+        public static void WriteProjectInfo(ProjectInfo info)
+        {
+            string json = JsonConvert.SerializeObject(info, Formatting.Indented);
+            File.WriteAllText(Path.Combine(info.ProjectPath, "ProjectInfo.json"), json);
         }
     }
     public class ProjectInfo
@@ -49,5 +58,14 @@ namespace Prismark.Utils
         public string MainAppPath { get; set; }
         public string ProjectPath { get; set; }
         public string ProjectName { get; set; }
+        public List<ProjectFile> ProjectFiles { get; set; }
+    }
+    public class ProjectFile
+    {
+        public string FileName { get; set; }
+        public string Section { get; set; }
+        public string Content { get; set; }
+        public bool IsSaved { get; set; } = true;
+        public bool IsInit { get; set; } = true;
     }
 }

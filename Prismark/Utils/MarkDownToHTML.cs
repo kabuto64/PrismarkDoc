@@ -16,6 +16,9 @@ namespace Prismark.Utils
         {
             string htmlContent = ConvertMarkdownToHtml(md);
             string css = GetEmbeddedResourceContent("Prismark.Resources.style.css");
+            string highlightcss = GetEmbeddedResourceContent("Prismark.Resources.highlightjs.atom-one-dark.min.css");
+            string highlightjs = GetEmbeddedResourceContent("Prismark.Resources.highlightjs.highlight.min.js");
+            string highlightjslinenumbers = GetEmbeddedResourceContent("Prismark.Resources.highlightjs.highlightjs-line-numbers.js");
             htmlContent = $@"
 <!DOCTYPE html>
 <html>
@@ -24,11 +27,36 @@ namespace Prismark.Utils
     <style>
         {css}
     </style>
+    <style>
+        {highlightcss}
+    </style>
+    <script>
+        {highlightjs}
+    </script>    
+    <script>
+        {highlightjslinenumbers}
+    </script>    
 </head>
 <body>
     <div class=""content-pane"">
         {htmlContent}
     </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', (event) => {{
+            hljs.highlightAll();
+            document.querySelectorAll('pre code').forEach(function (block) {{
+                const languageClass = Array.from(block.classList).find(cls => cls.startsWith('language-'));
+                if (languageClass) {{
+                    const language = languageClass.replace('language-', '');
+                    const label = document.createElement('span');
+                    label.className = 'language-label';
+                    label.textContent = language;
+                    block.parentNode.insertBefore(label, block);
+                }}
+            }});
+        }});
+
+    </script>
 </body>
 </html>";
 

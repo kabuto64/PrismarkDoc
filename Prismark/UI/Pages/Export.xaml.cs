@@ -70,7 +70,7 @@ namespace Prismark.UI.Pages
                 await WriteToLog($"リソースファイル: 'style.css'を {Path.Combine(txtFolderPath.Text, "css")}にコピーしました。");
 
                 await ExtractEmbeddedResource("atom-one-dark.min.css", Path.Combine(txtFolderPath.Text, "css", "highlightjs"));
-                await ExtractEmbeddedResource("highlight.js", Path.Combine(txtFolderPath.Text, "js", "highlightjs"));
+                await ExtractEmbeddedResource("highlight.min.js", Path.Combine(txtFolderPath.Text, "js", "highlightjs"));
                 await ExtractEmbeddedResource("highlightjs-line-numbers.js", Path.Combine(txtFolderPath.Text, "js", "highlightjs"));
 
                 await MediaFileCopy();

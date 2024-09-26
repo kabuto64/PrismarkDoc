@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
@@ -6,6 +7,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.IO;
+using Prismark.Properties;
 using Prismark.Utils;
 using Prismark.UI.StartUp;
 
@@ -18,6 +20,7 @@ namespace Prismark
     {
         // アプリケーション共有変数
         public bool IsLaunchedFromShortcut { get; set; }
+        public bool IsAbnormalClose { get; set; } = false;
         public string WorkingFolder { get; set; }
         public string ProjectName { get; set; }
 
@@ -32,20 +35,27 @@ namespace Prismark
         /// アプリケーションスタートアップ処理
         /// </summary>
         /// <param name="e"></param>
-        protected override async void OnStartup(StartupEventArgs e)
+        protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
 
             try
             {
+                if (Settings.Default.IsRunning)
+                {
+                    IsAbnormalClose = true;
+                }
+                Settings.Default.IsRunning = true;
+                Settings.Default.Save();
+
                 string projectPath = GetProjectPathFromCommandLine();
                 if (!string.IsNullOrEmpty(projectPath) && Directory.Exists(projectPath))
                 {
-                    await InitializeWithProjectPath(projectPath);
+                    InitializeWithProjectPath(projectPath);
                 }
                 else
                 {
-                    await InitializeWithoutProjectPath();
+                    InitializeWithoutProjectPath();
                 }
             }
             catch (Exception ex)
@@ -63,17 +73,18 @@ namespace Prismark
             return (projectIndex != -1 && args.Length > projectIndex + 1) ? args[projectIndex + 1] : null;
         }
 
-        private async Task InitializeWithProjectPath(string projectPath)
+        private void InitializeWithProjectPath(string projectPath)
         {
             WorkingFolder = projectPath;
             ProjectName = Path.GetFileName(projectPath);
-            await SaveLastWorkingDirectory(WorkingFolder);
+            Settings.Default.LastWorkingDirectory = WorkingFolder;
+            Settings.Default.Save();
             ShowMainWindow();
         }
 
-        private async Task InitializeWithoutProjectPath()
+        private void InitializeWithoutProjectPath()
         {
-            string lastWorkingDir = ConfigurationManager.AppSettings["LastWorkingDirectory"];
+            string lastWorkingDir = Settings.Default.LastWorkingDirectory;
             if (string.IsNullOrEmpty(lastWorkingDir))
             {
                 var startUpWindow = new StartUpWindow();
@@ -83,18 +94,10 @@ namespace Prismark
             {
                 WorkingFolder = lastWorkingDir;
                 ProjectName = Path.GetFileName(lastWorkingDir);
-                await SaveLastWorkingDirectory(WorkingFolder);
+                Settings.Default.LastWorkingDirectory = WorkingFolder;
+                Settings.Default.Save();
                 ShowMainWindow();
             }
-        }
-
-        private async Task SaveLastWorkingDirectory(string directory)
-        {
-            Utils.ProjectManager.CreateProjectLauncher(this.WorkingFolder, this.ProjectName);
-
-            Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
-            config.AppSettings.Settings["LastWorkingDirectory"].Value = directory;
-            await Task.Run(() => config.Save(ConfigurationSaveMode.Modified));
         }
 
         private void ShowMainWindow()
@@ -107,14 +110,16 @@ namespace Prismark
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private async void App_Exit(object sender, ExitEventArgs e)
+        private void App_Exit(object sender, ExitEventArgs e)
         {
             // 終了時に作業フォルダを記憶
             if (LocalHttpServer != null)
             {
                 LocalHttpServer.Stop();
             }
-            await SaveLastWorkingDirectory(WorkingFolder);
+            Settings.Default.IsRunning = false;
+            Settings.Default.LastWorkingDirectory = WorkingFolder;
+            Settings.Default.Save();
         }
     }
 }
