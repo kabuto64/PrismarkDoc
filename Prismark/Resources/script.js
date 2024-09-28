@@ -75,7 +75,7 @@ function loadContent(pageInfo) {
 
     generateTOC();
 
-    processExternalLinks();
+    //processExternalLinks();
     addCodeLanguageLabel();
     hljs.highlightAll();
     hljs.initLineNumbersOnLoad();

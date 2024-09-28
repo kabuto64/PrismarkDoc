@@ -45,10 +45,12 @@ namespace Prismark.UI.Pages
         private List<ProjectFile> _restoreProjectFiles;
 
         private DispatcherTimer saveTimer;
-        private const int SaveIntervalMilliseconds = 500;
+        private DispatcherTimer webView2Timer;
 
         private int _currentLine;
         private int _currentColumn;
+
+        double scrollPercentage;
 
         private App _app = Application.Current as App;
 
@@ -58,10 +60,20 @@ namespace Prismark.UI.Pages
 
         public Editor()
         {
-            _restoreProjectFiles = ProjectManager.ReadProjectInfo(_app.WorkingFolder).ProjectFiles.ToList();
+            _restoreProjectFiles = ProjectManager.ReadProjectInfo(_app.WorkingFolder)?.ProjectFiles?.ToList();
             InitializeComponent();
             InitializePage();
             SetupSaveTimer();
+            SetupWebView2Timer();
+
+            // カーソルが画面外に到達したときの自動スクロールを有効にする
+            //MarkDownEditor.Options.AllowScrollBelowDocument = true;
+            //MarkDownEditor.Options.ScrollBelowDocumentEnd = true;
+
+            // 必要に応じて、スクロールのマージンを設定する
+            //MarkDownEditor.ScrollToEnd();
+            //MarkDownEditor.ScrollToVerticalOffset(MarkDownEditor.VerticalOffset - 100);
+
         }
 
         #region 初期処理系
@@ -72,33 +84,35 @@ namespace Prismark.UI.Pages
                 // 異常セッションの復元
                 if (_app.IsAbnormalClose)
                 {
-                    UI.Modal.CustomOkCancelDialog dialog = new CustomOkCancelDialog("前回異常終了したセッションを復元しますか？");
-                    dialog.Owner = Window.GetWindow(this);
-                    if (dialog.ShowDialog() == true)
+                    if (_restoreProjectFiles?.Any() ?? false)
                     {
-                        foreach (var restoreItem in _restoreProjectFiles)
+                        UI.Modal.CustomOkCancelDialog dialog = new CustomOkCancelDialog("前回異常終了したセッションを復元しますか？");
+                        dialog.Owner = Window.GetWindow(this);
+                        if (dialog.ShowDialog() == true)
                         {
-                            ProjectFile file = GetProjectFile(restoreItem.FileName);
-                            if(file != null)
+                            foreach (var restoreItem in _restoreProjectFiles)
                             {
-                                bool isModify = file.Content != restoreItem.Content;
-                                file.Content = restoreItem.Content;
-                                file.IsInit = true;
-                                file.IsSaved = !isModify;
-                                file.IsInit = !isModify;
-                                UpdateFileButtonState(
-                                    Path.Combine(_app.WorkingFolder,"md", file.FileName + ".md"),
-                                    isModify
-                                    );
+                                ProjectFile file = GetProjectFile(restoreItem.FileName);
+                                if (file != null)
+                                {
+                                    bool isModify = file.Content != restoreItem.Content;
+                                    file.Content = restoreItem.Content;
+                                    file.IsInit = true;
+                                    file.IsSaved = !isModify;
+                                    file.IsInit = !isModify;
+                                    UpdateFileButtonState(
+                                        Path.Combine(_app.WorkingFolder, "md", file.FileName + ".md"),
+                                        isModify
+                                        );
+                                }
                             }
-                        }
-                        UpdateProjectFile();
+                            UpdateProjectFile();
 
-                        MarkDownEditor.Text = GetProjectFile(Path.GetFileNameWithoutExtension(_currentFilePath)).Content;
+                            MarkDownEditor.Text = GetProjectFile(Path.GetFileNameWithoutExtension(_currentFilePath)).Content;
+                        }
                     }
                     _app.IsAbnormalClose = false;
                 }
-                
             }
             catch (Exception ex)
             {
@@ -209,7 +223,7 @@ namespace Prismark.UI.Pages
         {
             saveTimer = new DispatcherTimer
             {
-                Interval = TimeSpan.FromMilliseconds(SaveIntervalMilliseconds)
+                Interval = TimeSpan.FromMilliseconds(10000)
             };
             saveTimer.Tick += SaveTimer_Tick;
         }
@@ -276,6 +290,9 @@ namespace Prismark.UI.Pages
             _isSwitchingTextChanged = true;
             try
             {
+                ScrollViewer scrollViewer = FindScrollViewer(MarkDownEditor);
+                scrollViewer.ScrollToVerticalOffset(0);
+
                 _currentFilePath = newFilePath;
                 //Undo Redo
                 undoRedoManager.SetCurrentFile(newFilePath); // 現在のファイルを設定
@@ -343,7 +360,7 @@ namespace Prismark.UI.Pages
             }
             try
             {
-                File.WriteAllText(_currentFilePath, MarkDownEditor.Text);
+                File.WriteAllText(_currentFilePath, MarkDownEditor.Text, Encoding.UTF8);
                 ProjectFile file = GetProjectFile(Path.GetFileNameWithoutExtension(_currentFilePath));
                 file.Content = MarkDownEditor.Text;
                 file.IsSaved = true;
@@ -600,45 +617,34 @@ namespace Prismark.UI.Pages
         {
             saveTimer.Stop();
             saveTimer.Start();
-
-            PreviewShow();      // プレビュー表示
-            StatusBarChange();  // Word,Line,Col
-
-            ProjectFile file = GetProjectFile(Path.GetFileNameWithoutExtension(_currentFilePath));
-
-            if (_currentFilePath != null && !_isSwitchingTextChanged) // ファイル切り替えによるテキストチェンジを検知
-            {
-                undoRedoManager.RecordState(MarkDownEditor.Text, MarkDownEditor.CaretOffset);
-                file.IsInit = false;
-            }
-            if(File.ReadAllText(_currentFilePath) == MarkDownEditor.Text)
-            {
-                // 保存データとカレントデータが一致していればいれば保存済みマークを表示
-                file.IsSaved = true;
-                file.Content = MarkDownEditor.Text;
-                UpdateFileButtonState(_currentFilePath, false);
-            }
-            else
-            {
-                file.IsSaved = false;
-                file.Content = MarkDownEditor.Text;
-                UpdateFileButtonState(_currentFilePath, true);
-            }
-            UpdateUndoRedoButtons();
-            UpdateProjectFile(file);
+            webView2Timer.Stop();
+            webView2Timer.Start();
         }
         private void Caret_PositionChanged(object sender, EventArgs e)
         {
             StatusBarChange();
+            ScrollToCaretIfOutOfView();
+
+
         }
         private async void PreviewShow()
         {
-            string markdown = MarkDownEditor.Text;
-            Utils.MarkDownToHTML conv = new Utils.MarkDownToHTML();
+            await Task.Run(() =>
+            {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    string markdown = MarkDownEditor.Text;
+                    Utils.MarkDownToHTML conv = new Utils.MarkDownToHTML();
+                    string modifiedHtml = _app.LocalHttpServer.ReplaceMediaPaths(conv.ToUnitHtml(markdown));
 
-            string modifiedHtml = _app.LocalHttpServer.ReplaceMediaPaths(conv.ToUnitHtml(markdown));
-
-            webView.NavigateToString(modifiedHtml);
+                    webView.NavigateToString(modifiedHtml);
+                    webView.NavigationCompleted += (sender, e) =>
+                    {
+                        onScrollChange();
+                    };
+                });
+            });
+            
         }
         private void MarkDownEditor_Loaded(object sender, RoutedEventArgs e)
         {
@@ -648,10 +654,53 @@ namespace Prismark.UI.Pages
                 scrollViewer.ScrollChanged += ScrollViewer_ScrollChanged;
             }
         }
+        private void ScrollToCaretIfOutOfView()
+        {
+            var textView = MarkDownEditor.TextArea.TextView;
+            var caret = MarkDownEditor.TextArea.Caret;
+            var position = caret.Position;
+            var visualTop = textView.GetVisualPosition(position, ICSharpCode.AvalonEdit.Rendering.VisualYPosition.LineTop);
+            var visualBottom = textView.GetVisualPosition(position, ICSharpCode.AvalonEdit.Rendering.VisualYPosition.LineBottom);
+            ScrollViewer scrollViewer = FindScrollViewer(MarkDownEditor);
 
+            int ScrollMargin = 2;
 
-        double scrollPercentage;
-        private async void ScrollViewer_ScrollChanged(object sender, ScrollChangedEventArgs e)
+            double currentTop = scrollViewer.VerticalOffset;
+            double currentBottom = scrollViewer.VerticalOffset + scrollViewer.ViewportHeight;
+            double lineHeight = textView.DefaultLineHeight;
+
+            double newVerticalOffset = scrollViewer.VerticalOffset;
+            bool needScroll = false;
+
+            // カーソルが上側の表示範囲外にある場合
+            if (visualTop.Y < currentTop + (ScrollMargin * lineHeight))
+            {
+                newVerticalOffset = visualTop.Y - (ScrollMargin * lineHeight);
+                needScroll = true;
+            }
+            // カーソルが下側の表示範囲外にある場合
+            else if (visualBottom.Y > currentBottom - (ScrollMargin * lineHeight))
+            {
+                newVerticalOffset = visualBottom.Y - scrollViewer.ViewportHeight + (ScrollMargin * lineHeight);
+                needScroll = true;
+            }
+
+            if (needScroll)
+            {
+                // スクロール位置が有効な範囲内になるように調整
+                newVerticalOffset = Math.Max(0, Math.Min(newVerticalOffset, scrollViewer.ScrollableHeight));
+                scrollViewer.ScrollToVerticalOffset(newVerticalOffset);
+            }
+
+            // 水平方向のスクロール
+            if (visualTop.X < scrollViewer.HorizontalOffset ||
+                visualTop.X > scrollViewer.HorizontalOffset + scrollViewer.ViewportWidth)
+            {
+                scrollViewer.ScrollToHorizontalOffset(visualTop.X);
+            }
+        }
+
+        private void ScrollViewer_ScrollChanged(object sender, ScrollChangedEventArgs e)
         {
             // スクロール位置が変更されたときの処理
             double verticalOffset = e.VerticalOffset;
@@ -662,6 +711,14 @@ namespace Prismark.UI.Pages
                 // スクロール位置の計算（0から1の範囲に正規化）
                 scrollPercentage = e.VerticalOffset / (e.ExtentHeight - e.ViewportHeight);
 
+                // JavaScriptを使用してWebView2をスクロール
+                onScrollChange();
+            }
+        }
+        private async void onScrollChange()
+        {
+            if (webView.CoreWebView2 != null)
+            {
                 // JavaScriptを使用してWebView2をスクロール
                 await webView.CoreWebView2.ExecuteScriptAsync($@"
                     var contentHeight = document.body.scrollHeight;
@@ -686,10 +743,6 @@ namespace Prismark.UI.Pages
             }
             return null;
         }
-        private async void MarkDownEditor_ScrollChanged(object sender, ScrollChangedEventArgs e)
-        {
-            
-        }
         private void StatusBarChange()
         {
             int wordCount = MarkDownEditor.Text.Count(c => !char.IsWhiteSpace(c));
@@ -700,6 +753,46 @@ namespace Prismark.UI.Pages
             Lines.Text = $"Lines: {_currentLine}";
             Col.Text = $"Col: {_currentColumn}";
         }
+        private void SetupWebView2Timer()
+        {
+            webView2Timer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromMilliseconds(50)
+            };
+            webView2Timer.Tick += WebView2Timer_Tick;
+        }
+        private void WebView2Timer_Tick(object sender, EventArgs e)
+        {
+            webView2Timer.Stop();
+
+            PreviewShow();
+            StatusBarChange();  // Word,Line,Col
+
+            ProjectFile file = GetProjectFile(Path.GetFileNameWithoutExtension(_currentFilePath));
+
+            if (_currentFilePath != null && !_isSwitchingTextChanged) // ファイル切り替えによるテキストチェンジを検知
+            {
+                undoRedoManager.RecordState(MarkDownEditor.Text, MarkDownEditor.CaretOffset);
+                file.IsInit = false;
+            }
+            if (File.ReadAllText(_currentFilePath) == MarkDownEditor.Text)
+            {
+                // 保存データとカレントデータが一致していればいれば保存済みマークを表示
+                file.IsSaved = true;
+                file.Content = MarkDownEditor.Text;
+                UpdateFileButtonState(_currentFilePath, false);
+            }
+            else
+            {
+                file.IsSaved = false;
+                file.Content = MarkDownEditor.Text;
+                UpdateFileButtonState(_currentFilePath, true);
+            }
+            UpdateUndoRedoButtons();
+
+            UpdateProjectFile(file);
+        }
+
         #endregion
 
         #region マークダウン適用ロジック

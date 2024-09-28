@@ -35,7 +35,7 @@ namespace Prismark.Utils
             File.WriteAllBytes(launcherPath, launcherBytes);
 
             // プロジェクト情報ファイルを作成
-            ProjectInfo info = ReadProjectInfo(projectPath);
+            ProjectInfo info = new ProjectInfo();
             info.MainAppPath = Assembly.GetExecutingAssembly().Location;
             info.ProjectPath = projectPath;
             info.ProjectName = projectName;
@@ -50,7 +50,7 @@ namespace Prismark.Utils
         public static void WriteProjectInfo(ProjectInfo info)
         {
             string json = JsonConvert.SerializeObject(info, Formatting.Indented);
-            File.WriteAllText(Path.Combine(info.ProjectPath, "ProjectInfo.json"), json);
+            File.WriteAllText(Path.Combine(info.ProjectPath, "ProjectInfo.json"), json, Encoding.UTF8);
         }
     }
     public class ProjectInfo
