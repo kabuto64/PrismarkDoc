@@ -912,18 +912,13 @@ namespace Prismark.UI.Pages
         /// <param name="e"></param>
         private void btnEditImage_Click(object sender, RoutedEventArgs e)
         {
-            var dialog = new CommonOpenFileDialog
+            ImageSelectDialog dialog = new ImageSelectDialog();
+            dialog.Owner = Window.GetWindow(this);
+            if (dialog.ShowDialog() == true)
             {
-                Title = "画像を選択してください",
-                InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures)
-            };
-            dialog.Filters.Add(new CommonFileDialogFilter("画像", "*.png;*.jpg;*.jpeg;*.gif;*.svg;*.bmp;*.tif;*.tiff;"));
-            if (dialog.ShowDialog() == CommonFileDialogResult.Ok)
-            {
-                File.Copy(dialog.FileName, System.IO.Path.Combine(_app.WorkingFolder, "img", System.IO.Path.GetFileName(dialog.FileName)), true);
-                ApplyInsertMarkdown($"![代替テキスト](img/{System.IO.Path.GetFileName(dialog.FileName)})");
+                File.Copy(dialog.ImagePath, Path.Combine(_app.WorkingFolder, "img", Path.GetFileName(dialog.ImagePath)), true);
+                ApplyInsertMarkdown($"![代替テキスト](img/{Path.GetFileName(dialog.ImagePath)}){{style=width:{dialog.ImageWidth}px;}}");
             }
-
         }
         /// <summary>
         /// 文字列を着色

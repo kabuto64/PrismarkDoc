@@ -45,7 +45,11 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugType>pdbonly</DebugType>
+    <!-- .configファイルを生成しない -->
+    <GenerateConfigurationRelatedFile>false</GenerateConfigurationRelatedFile>
+    <!-- .pdbファイルを生成しない -->
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
@@ -149,6 +153,9 @@
     <Compile Include="UI\Modal\FileNameInputDialog.xaml.cs">
       <DependentUpon>FileNameInputDialog.xaml</DependentUpon>
     </Compile>
+    <Compile Include="UI\Modal\ImageSelectDialog.xaml.cs">
+      <DependentUpon>ImageSelectDialog.xaml</DependentUpon>
+    </Compile>
     <Compile Include="UI\Modal\TableSelectDialog.xaml.cs">
       <DependentUpon>TableSelectDialog.xaml</DependentUpon>
     </Compile>
@@ -199,6 +206,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="UI\Modal\FileNameInputDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="UI\Modal\ImageSelectDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -318,5 +329,14 @@
       <ErrorText>このプロジェクトは、このコンピューター上にない NuGet パッケージを参照しています。それらのパッケージをダウンロードするには、[NuGet パッケージの復元] を使用します。詳細については、http://go.microsoft.com/fwlink/?LinkID=322105 を参照してください。見つからないファイルは {0} です。</ErrorText>
     </PropertyGroup>
     <Error Condition="!Exists('..\packages\Microsoft.Web.WebView2.1.0.2592.51\build\Microsoft.Web.WebView2.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Web.WebView2.1.0.2592.51\build\Microsoft.Web.WebView2.targets'))" />
+    <Error Condition="!Exists('..\packages\ILRepack.Lib.MSBuild.Task.2.0.34.2\build\ILRepack.Lib.MSBuild.Task.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\ILRepack.Lib.MSBuild.Task.2.0.34.2\build\ILRepack.Lib.MSBuild.Task.targets'))" />
   </Target>
+  <Target Name="MakeSingleBinary" AfterTargets="PostBuildEvent" Condition="false">
+    <PropertyGroup>
+      <ILRepackDir>$(ProjectDir)..\_dist\</ILRepackDir>
+    </PropertyGroup>
+    <MakeDir Directories="$(ILRepackDir)" />
+    <ILRepack OutputType="$(OutputType)" MainAssembly="$(AssemblyName).exe" OutputAssembly="$(ILRepackDir)$(AssemblyName).exe" InputAssemblies="*.dll" WilcardInputAssemblies="true" WorkingDirectory="$(TargetDir)" />
+  </Target>
+  <Import Project="..\packages\ILRepack.Lib.MSBuild.Task.2.0.34.2\build\ILRepack.Lib.MSBuild.Task.targets" Condition="Exists('..\packages\ILRepack.Lib.MSBuild.Task.2.0.34.2\build\ILRepack.Lib.MSBuild.Task.targets')" />
 </Project>

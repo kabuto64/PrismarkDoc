@@ -507,6 +507,7 @@
                     SyntaxHighlighting="C#"
                     FontFamily="Segoe UI,Meiryo"
                     FontSize="10pt"
+                    WordWrap="True"
                     ShowLineNumbers="True" TextChanged="MarkDownEditor_TextChanged" PreviewKeyDown="MarkDownEditor_PreviewKeyDown" Loaded="MarkDownEditor_Loaded">
                     <avalonEdit:TextEditor.Options>
                         <avalonEdit:TextEditorOptions
