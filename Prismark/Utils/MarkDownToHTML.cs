@@ -12,7 +12,7 @@ namespace Prismark.Utils
     internal class MarkDownToHTML
     {
         public MarkDownToHTML() { }
-        public string ToUnitHtml(string md)
+        public string ToViewHtml(string md)
         {
             string htmlContent = ConvertMarkdownToHtml(md);
             string css = GetEmbeddedResourceContent("Prismark.Resources.style.css");
@@ -38,11 +38,12 @@ namespace Prismark.Utils
     </script>    
 </head>
 <body>
-    <div class=""content-pane"">
+    <div class=""content-pane"" id=""content"">
         {htmlContent}
     </div>
     <script>
-        document.addEventListener('DOMContentLoaded', (event) => {{
+        function updateContent(html) {{
+            document.getElementById('content').innerHTML = html;
             hljs.highlightAll();
             document.querySelectorAll('pre code').forEach(function (block) {{
                 const languageClass = Array.from(block.classList).find(cls => cls.startsWith('language-'));
@@ -54,8 +55,7 @@ namespace Prismark.Utils
                     block.parentNode.insertBefore(label, block);
                 }}
             }});
-        }});
-
+        }}
     </script>
 </body>
 </html>";
@@ -72,7 +72,7 @@ namespace Prismark.Utils
             }
         }
 
-        private string ConvertMarkdownToHtml(string markdown)
+        public string ConvertMarkdownToHtml(string markdown)
         {
             var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
             // 改行コードを正規化

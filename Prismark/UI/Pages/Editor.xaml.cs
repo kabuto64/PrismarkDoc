@@ -159,7 +159,17 @@ namespace Prismark.UI.Pages
                     _app.LocalHttpServer.Start();
                 }
                 await webView.EnsureCoreWebView2Async(null);
-                PreviewShow();
+                await Task.Run(() =>
+                {
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        string markdown = MarkDownEditor.Text;
+                        Utils.MarkDownToHTML conv = new Utils.MarkDownToHTML();
+                        string modifiedHtml = _app.LocalHttpServer.ReplaceMediaPaths(conv.ToViewHtml(markdown));
+
+                        webView.NavigateToString(modifiedHtml);
+                    });
+                });
                 InitializeFirstFile();
             }
             catch (Exception ex)
@@ -627,25 +637,6 @@ namespace Prismark.UI.Pages
 
 
         }
-        private async void PreviewShow()
-        {
-            await Task.Run(() =>
-            {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    string markdown = MarkDownEditor.Text;
-                    Utils.MarkDownToHTML conv = new Utils.MarkDownToHTML();
-                    string modifiedHtml = _app.LocalHttpServer.ReplaceMediaPaths(conv.ToUnitHtml(markdown));
-
-                    webView.NavigateToString(modifiedHtml);
-                    webView.NavigationCompleted += (sender, e) =>
-                    {
-                        onScrollChange();
-                    };
-                });
-            });
-            
-        }
         private void MarkDownEditor_Loaded(object sender, RoutedEventArgs e)
         {
             ScrollViewer scrollViewer = FindScrollViewer(MarkDownEditor);
@@ -715,6 +706,17 @@ namespace Prismark.UI.Pages
                 onScrollChange();
             }
         }
+        private async Task onUpdateHTML()
+        {
+            if (webView.CoreWebView2 != null)
+            {
+                string markdown = MarkDownEditor.Text;
+                Utils.MarkDownToHTML conv = new Utils.MarkDownToHTML();
+                string modifiedHtml = _app.LocalHttpServer.ReplaceMediaPaths(conv.ConvertMarkdownToHtml(markdown));
+                // JavaScriptを使用してWebView2をスクロール"
+                await webView.CoreWebView2.ExecuteScriptAsync($"updateContent(`{modifiedHtml.Replace("`", "\\`")}`)");
+            }
+        }
         private async void onScrollChange()
         {
             if (webView.CoreWebView2 != null)
@@ -761,11 +763,11 @@ namespace Prismark.UI.Pages
             };
             webView2Timer.Tick += WebView2Timer_Tick;
         }
-        private void WebView2Timer_Tick(object sender, EventArgs e)
+        private async void WebView2Timer_Tick(object sender, EventArgs e)
         {
             webView2Timer.Stop();
 
-            PreviewShow();
+            await onUpdateHTML();
             StatusBarChange();  // Word,Line,Col
 
             ProjectFile file = GetProjectFile(Path.GetFileNameWithoutExtension(_currentFilePath));
