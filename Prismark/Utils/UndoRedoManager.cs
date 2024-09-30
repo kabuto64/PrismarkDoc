@@ -8,10 +8,12 @@ namespace Prismark.Utils
 {
     public class UndoRedoManager
     {
+        private const int MaxStackSize = 100;
+
         private class UndoRedoInfo
         {
-            public Stack<(string Text, int CaretPosition)> UndoStack { get; } = new Stack<(string, int)>();
-            public Stack<(string Text, int CaretPosition)> RedoStack { get; } = new Stack<(string, int)>();
+            public LinkedList<(string Text, int CaretPosition)> UndoList { get; } = new LinkedList<(string, int)>();
+            public LinkedList<(string Text, int CaretPosition)> RedoList { get; } = new LinkedList<(string, int)>();
             public string CurrentText { get; set; } = "";
             public int CurrentCaretPosition { get; set; } = 0;
         }
@@ -33,8 +35,8 @@ namespace Prismark.Utils
             if (currentFilePath == null) return;
 
             var info = fileUndoRedoInfo[currentFilePath];
-            info.UndoStack.Clear();
-            info.RedoStack.Clear();
+            info.UndoList.Clear();
+            info.RedoList.Clear();
             info.CurrentText = initialText;
             info.CurrentCaretPosition = caretPosition;
         }
@@ -46,10 +48,14 @@ namespace Prismark.Utils
             var info = fileUndoRedoInfo[currentFilePath];
             if (newText != info.CurrentText || caretPosition != info.CurrentCaretPosition)
             {
-                info.UndoStack.Push((info.CurrentText, info.CurrentCaretPosition));
+                info.UndoList.AddFirst((info.CurrentText, info.CurrentCaretPosition));
+                if (info.UndoList.Count > MaxStackSize)
+                {
+                    info.UndoList.RemoveLast();
+                }
                 info.CurrentText = newText;
                 info.CurrentCaretPosition = caretPosition;
-                info.RedoStack.Clear();
+                info.RedoList.Clear();
             }
         }
 
@@ -58,11 +64,18 @@ namespace Prismark.Utils
             if (currentFilePath == null) return null;
 
             var info = fileUndoRedoInfo[currentFilePath];
-            if (info.UndoStack.Count > 0)
+            if (info.UndoList.Count > 0)
             {
-                info.RedoStack.Push((info.CurrentText, info.CurrentCaretPosition));
-                (info.CurrentText, info.CurrentCaretPosition) = info.UndoStack.Pop();
-                return (info.CurrentText, info.CurrentCaretPosition);
+                info.RedoList.AddFirst((info.CurrentText, info.CurrentCaretPosition));
+                if (info.RedoList.Count > MaxStackSize)
+                {
+                    info.RedoList.RemoveLast();
+                }
+                var state = info.UndoList.First.Value;
+                info.UndoList.RemoveFirst();
+                info.CurrentText = state.Text;
+                info.CurrentCaretPosition = state.CaretPosition;
+                return state;
             }
             return null;
         }
@@ -72,23 +85,30 @@ namespace Prismark.Utils
             if (currentFilePath == null) return null;
 
             var info = fileUndoRedoInfo[currentFilePath];
-            if (info.RedoStack.Count > 0)
+            if (info.RedoList.Count > 0)
             {
-                info.UndoStack.Push((info.CurrentText, info.CurrentCaretPosition));
-                (info.CurrentText, info.CurrentCaretPosition) = info.RedoStack.Pop();
-                return (info.CurrentText, info.CurrentCaretPosition);
+                info.UndoList.AddFirst((info.CurrentText, info.CurrentCaretPosition));
+                if (info.UndoList.Count > MaxStackSize)
+                {
+                    info.UndoList.RemoveLast();
+                }
+                var state = info.RedoList.First.Value;
+                info.RedoList.RemoveFirst();
+                info.CurrentText = state.Text;
+                info.CurrentCaretPosition = state.CaretPosition;
+                return state;
             }
             return null;
         }
 
         public bool CanUndo()
         {
-            return currentFilePath != null && fileUndoRedoInfo[currentFilePath].UndoStack.Count > 0;
+            return currentFilePath != null && fileUndoRedoInfo[currentFilePath].UndoList.Count > 0;
         }
 
         public bool CanRedo()
         {
-            return currentFilePath != null && fileUndoRedoInfo[currentFilePath].RedoStack.Count > 0;
+            return currentFilePath != null && fileUndoRedoInfo[currentFilePath].RedoList.Count > 0;
         }
     }
 }
