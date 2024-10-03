@@ -1,70 +1,75 @@
 ﻿<?xml version="1.0"?>
 <SyntaxDefinition name="MarkDown" extensions=".md" xmlns="http://icsharpcode.net/sharpdevelop/syntaxdefinition/2008">
-  <Color name="Heading" foreground="#569CD6" exampleText="# Title #" />
-  <Color name="Emphasis" foreground="#CE9178" fontStyle="italic" exampleText="*this* is important!" />
-  <Color name="StrongEmphasis" foreground="#CE9178" fontWeight="bold" exampleText="**this** is more important!" />
-  <Color name="Code" foreground="#4EC9B0" exampleText="this is `int.GetHashCode()`" />
-  <Color name="BlockQuote" foreground="#608B4E" exampleText="> This is a&#x0a;> quote." />
-  <Color name="Link" foreground="#569CD6" exampleText="[text](http://example.com)" />
-  <Color name="Image" foreground="#B5CEA8" exampleText="![text](http://example.com/test.png)" />
-  <Color name="LineBreak" background="#2C3E50" exampleText="end of line      &#x0a;2nd line   " />
-  <Color name="HtmlTag" foreground="#808080" exampleText="&lt;div&gt;This is HTML&lt;/div&gt;" />
-  <Color name="CodeBlock" foreground="#4EC9B0" background="#1E1E1E" exampleText="```&#x0a;code block&#x0a;```" />
-  <Color name="Table" foreground="#D4D4D4" exampleText="|Column1|Column2|&#x0a;|--------|--------|" />
-  <Color name="HorizontalRule" foreground="#D4D4D4" exampleText="---" />
+	<Color name="Heading" foreground="#E06C75" exampleText="# Title #" />
+	<Color name="Emphasis" fontStyle="italic" exampleText="*this* is important!" />
+	<Color name="StrongEmphasis" fontWeight="bold" exampleText="**this** is more important!" />
+	<Color name="Strikethrough" strikethrough="true" exampleText="~~this~~ is more important!" />
+	<Color name="Code" background="#25FFFFFF" foreground="#A3A3A3" exampleText="this is `int.GetHashCode()`" />
+	<Color name="BlockQuote" foreground="#A3A3A3" exampleText="> This is a&#x0a;> quote." />
+	<Color name="Link" foreground="#569CD6" exampleText="[text](http://example.com)" />
+	<Color name="Image" foreground="#B5CEA8" exampleText="![text](http://example.com/test.png)" />
+	<Color name="LineBreak" background="#2C3E50" exampleText="end of line      &#x0a;2nd line   " />
+	<Color name="HtmlTag" foreground="#808080" exampleText="&lt;div&gt;This is HTML&lt;/div&gt;" />
+	<Color name="CodeBlock" foreground="#8BC678DD" exampleText="```&#x0a;code block&#x0a;```" />
+	<Color name="Table" foreground="#A3A3A3" exampleText="|Column1|Column2|&#x0a;|--------|--------|" />
+	<Color name="HorizontalRule" foreground="#D4D4D4" exampleText="---" />
 
-  <RuleSet ignoreCase="true">
-    <Rule color="Heading">
-      ^[#]+.*$
-    </Rule>
-    <Rule color="StrongEmphasis">
-      \*\*.*?\*\*
-    </Rule>
-    <Rule color="StrongEmphasis">
-      __.*?__
-    </Rule>
-    <Rule color="Emphasis">
-      \*(?![ ]).*?\*
-    </Rule>
-    <Rule color="Emphasis">
-      _.*?_
-    </Rule>
-    <Rule color="Code">
-      `.*?`
-    </Rule>
-    <Span color="CodeBlock" multiline="true">
-      <Begin>^```.*$</Begin>
-      <End>^```\s*$</End>
-    </Span>
-    <Span color="Code" ruleSet="C#/" multiline="true">
-      <Begin>^\t</Begin>
-      <End>^(?!\t)</End>
-    </Span>
-    <Span color="Code" ruleSet="C#/" multiline="true">
-      <Begin>^[ ]{4}</Begin>
-      <End>^(?![ ]{4})</End>
-    </Span>
-    <Span color="BlockQuote" multiline="true">
-      <Begin>^&gt;</Begin>
-      <End>^(?!&gt;)</End>
-    </Span>
-    <Rule color="Image">
-      !\[.*?\]\(.*?\)
-    </Rule>
-    <Rule color="Link">
-      \[.*?\]\(.*?\)
-    </Rule>
-    <Rule color="Link">
-      \[.*?\]\[.*?\]
-    </Rule>
-    <Rule color="LineBreak">
-      [ ]{2}$
-    </Rule>
-    <Rule color="HtmlTag">
-      &lt;/?[a-zA-Z][^&gt;]*&gt;
-    </Rule>
-    <Rule color="Table">
-      ^\|.*\|$
-    </Rule>
-  </RuleSet>
+	<RuleSet ignoreCase="true">
+		<Rule color="Heading">
+			^[#]+.*$
+		</Rule>
+		<Rule color="StrongEmphasis">
+			\*\*.*?\*\*
+		</Rule>
+		<Rule color="StrongEmphasis">
+			__.*?__
+		</Rule>
+		<Rule color="Emphasis">
+			\*(?![ ]).*?\*
+		</Rule>
+		<Rule color="Emphasis">
+			_.*?_
+		</Rule>
+		<Rule color="Strikethrough">
+			~~.*?~~
+		</Rule>
+		<Rule color="Code">
+			`.*?`
+		</Rule>
+		<Span color="CodeBlock" multiline="true">
+			<Begin>^```.*$</Begin>
+			<End>^```\s*$</End>
+		</Span>
+		<Span color="Code" ruleSet="C#/" multiline="true">
+			<Begin>^\t</Begin>
+			<End>^(?!\t)</End>
+		</Span>
+		<Span color="Code" ruleSet="C#/" multiline="true">
+			<Begin>^[ ]{4}</Begin>
+			<End>^(?![ ]{4})</End>
+		</Span>
+		<Span color="BlockQuote" multiline="true">
+			<Begin>^&gt;</Begin>
+			<End>^(?!&gt;)</End>
+		</Span>
+		<Rule color="Image">
+			!\[.*?\]\(.*?\)
+		</Rule>
+		<Rule color="Link">
+			\[.*?\]\(.*?\)
+		</Rule>
+		<Rule color="Link">
+			\[.*?\]\[.*?\]
+		</Rule>
+		<Rule color="LineBreak">
+			[ ]{2}$
+		</Rule>
+		<Rule color="HtmlTag">
+			&lt;/?[a-zA-Z][^&gt;]*&gt;
+		</Rule>
+		<Rule color="Table">
+			^\|.*\|$
+		</Rule>
+
+	</RuleSet>
 </SyntaxDefinition>

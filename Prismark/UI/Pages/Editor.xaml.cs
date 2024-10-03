@@ -123,6 +123,7 @@ namespace Prismark.UI.Pages
         private void InitializePage()
         {
             // シンタックスハイライト定義ファイルを読み込む
+            MarkDownEditor.Options.EnableHyperlinks = false;
             var assembly = Assembly.GetExecutingAssembly();
             using (Stream s = assembly.GetManifestResourceStream("Prismark.UI.Themes.MarkdownDark.xshd"))
             {
@@ -825,6 +826,18 @@ namespace Prismark.UI.Pages
         {
             ApplyLineStartMarkdown("### ");
         }
+        private void btnEditH4_Click(object sender, RoutedEventArgs e)
+        {
+            ApplyLineStartMarkdown("#### ");
+        }
+        private void btnEditH5_Click(object sender, RoutedEventArgs e)
+        {
+            ApplyLineStartMarkdown("##### ");
+        }
+        private void btnEditH6_Click(object sender, RoutedEventArgs e)
+        {
+            ApplyLineStartMarkdown("###### ");
+        }
         /// <summary>
         /// 改行挿入
         /// </summary>
@@ -1190,12 +1203,6 @@ namespace Prismark.UI.Pages
         /// <param name="e"></param>
         private void Editor_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
-            // Ctlr+S:保存
-            if (e.Key == Key.S && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
-            {
-                SaveFile();
-                e.Handled = true; // イベントが処理されたことを示す
-            }
             // Ctlr+Shift+S:すべて保存
             if (e.Key == Key.S &&
                 (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control &&
@@ -1204,11 +1211,28 @@ namespace Prismark.UI.Pages
                 btnAllSave_Click(sender, e);
                 e.Handled = true;
             }
+            // Ctlr+S:保存
+            if (e.Key == Key.S && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+            {
+                SaveFile();
+                e.Handled = true; // イベントが処理されたことを示す
+            }
+            
             // Ctlr+N:新規ファイル
             if (e.Key == Key.N && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
             {
                 AddNewFile(sender, e);
                 e.Handled = true; // イベントが処理されたことを示す
+            }
+            // Shift+F 検索
+            if (e.Key == Key.F && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+            {
+                e.Handled = true;
+            }
+            // Shift+R 置換
+            if (e.Key == Key.R && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+            {
+                e.Handled = true;
             }
 
         }
@@ -1245,6 +1269,60 @@ namespace Prismark.UI.Pages
                 btnEdititalic_Click(sender, e);
                 e.Handled = true;
             }
+            // Ctrl+U:下線
+            if (e.Key == Key.U && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+            {
+                btnEditUnderline_Click(sender, e);
+                e.Handled = true;
+            }
+            // Ctrl+K:リンク
+            if (e.Key == Key.K && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+            {
+                btnEditLink_Click(sender, e);
+                e.Handled = true;
+            }
+            // Ctrl+Q:引用
+            if (e.Key == Key.K && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+            {
+                btnEditQuote_Click(sender, e);
+                e.Handled = true;
+            }
+            // Ctrl+Shift+@:コードブロック
+            if (e.Key == Key.Oem3 &&
+                (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control &&
+                (Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift)
+            {
+                btnEditCodeBlock_Click(sender, e);
+                e.Handled = true;
+                return;
+            }
+            // Ctrl+@:インラインコード
+            if (e.Key == Key.Oem3 && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+            {
+                btnEditCode_Click(sender, e);
+                e.Handled = true;
+            }
+            // Ctrl+T:表挿入
+            if (e.Key == Key.T && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+            {
+                btnEditGrid_Click(sender, e);
+                e.Handled = true;
+            }
+            // Ctrl+Shift+L:番号付きリスト
+            if (e.Key == Key.L &&
+                (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control &&
+                (Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift)
+            {
+                btnEditListNum_Click(sender, e);
+                e.Handled = true;
+                return;
+            }
+            // Ctrl+L:箇条書きリスト
+            if (e.Key == Key.L && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+            {
+                btnEditList_Click(sender, e);
+                e.Handled = true;
+            }
             // Ctrl+1:見出し大
             if (e.Key == Key.D1 && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
             {
@@ -1269,6 +1347,8 @@ namespace Prismark.UI.Pages
                 btnEditBreak_Click(sender, e);
                 e.Handled = true;
             }
+
+
         }
         #endregion
 

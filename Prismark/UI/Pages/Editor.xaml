@@ -189,6 +189,8 @@
                 <RowDefinition Height="40"/>
                 <RowDefinition Height="1"/>
                 <RowDefinition Height="*"/>
+                <RowDefinition Height="1"/>
+                <RowDefinition Height="30"/>
             </Grid.RowDefinitions>
             <StackPanel Grid.Row="0" Orientation="Horizontal"  Margin="10,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Left">
                 <TextBlock x:Name="txtProjectName" 
@@ -207,6 +209,13 @@
                                 Tag="{StaticResource NewDocIcon}"
                                 KeyboardNavigation.AcceptsReturn="False"
                                 Style="{StaticResource EditorIconButtonStyle}" Click="AddNewFile"/>
+                <Button Content="Add"
+                                x:Name="btnInport"
+                                ToolTip="ファイルから開く"
+                        Margin="-5,0,0,0"
+                                Tag="{StaticResource InportIcon}"
+                                KeyboardNavigation.AcceptsReturn="False"
+                                Style="{StaticResource EditorIconButtonStyle}"/>
                 <Button Content="Add"
                                 x:Name="btnAllSave"
                                 ToolTip="すべてのファイルを保存(Ctrl+Shift+S)"
@@ -228,7 +237,14 @@
                 <StackPanel x:Name="pnlMdFiles" >
                 </StackPanel>
             </ScrollViewer>
-            
+            <Rectangle Grid.Row="4" Fill="#333333"/>
+            <StackPanel Grid.Row="5" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right">
+                <Button Content="Setting"
+                    x:Name="btnSetting"
+                    ToolTip="設定..."
+                    Tag="{StaticResource SettingIcon}"
+                    Style="{StaticResource EditorIconButtonStyle}"/>
+            </StackPanel>
         </Grid>
         <!-- 境界線 -->
         <Rectangle Grid.Column="1" Fill="#333333"/>
@@ -282,28 +298,43 @@
                             ToolTip="改行挿入(Shift+Enter)"
                             Tag="{StaticResource ReturnIcon}"
                             Style="{StaticResource EditorIconButtonStyle}" Click="btnEditBreak_Click"/>
-                    <Button Content="Paragraph"
+                    <!--<Button Content="Paragraph"
                             Margin="0,5,0,0"
                             x:Name="btnEditParagraph"
                             ToolTip="段落"
                             Tag="{StaticResource ParagraphIcon}"
-                            Style="{StaticResource EditorIconButtonStyle}" Click="btnEditParagraph_Click"/>
+                            Style="{StaticResource EditorIconButtonStyle}" Click="btnEditParagraph_Click"/>-->
                     <Button Content="H1"
                             x:Name="btnEditH1"
-                            ToolTip="見出し（大）(Ctrl+1)"
+                            ToolTip="見出し（レベル1）(Ctrl+1)"
                             Tag="{StaticResource H1Icon}"
-                            Margin="10,-2,0,0"
+                            Margin="10,0,0,0"
                             Style="{StaticResource EditorIconButtonStyle}" Click="btnEditH1_Click"/>
                     <Button Content="H2"
                             x:Name="btnEditH2"
-                            ToolTip="見出し（中）(Ctrl+2)"
+                            ToolTip="見出し（レベル2）(Ctrl+2)"
                             Tag="{StaticResource H2Icon}"
                             Style="{StaticResource EditorIconButtonStyle}" Click="btnEditH2_Click"/>
                     <Button Content="H3"
                             x:Name="btnEditH3"
-                            ToolTip="見出し（小）(Ctrl+3)"
+                            ToolTip="見出し（レベル3）(Ctrl+3)"
                             Tag="{StaticResource H3Icon}"
                             Style="{StaticResource EditorIconButtonStyle}" Click="btnEditH3_Click"/>
+                    <Button Content="H4"
+                            x:Name="btnEditH4"
+                            ToolTip="見出し（レベル4）(Ctrl+4)"
+                            Tag="{StaticResource H4Icon}"
+                            Style="{StaticResource EditorIconButtonStyle}" Click="btnEditH4_Click"/>
+                    <Button Content="H5"
+                            x:Name="btnEditH5"
+                            ToolTip="見出し（レベル5）(Ctrl+5)"
+                            Tag="{StaticResource H5Icon}"
+                            Style="{StaticResource EditorIconButtonStyle}" Click="btnEditH5_Click"/>
+                    <Button Content="H6"
+                            x:Name="btnEditH6"
+                            ToolTip="見出し（レベル6）(Ctrl+6)"
+                            Tag="{StaticResource H6Icon}"
+                            Style="{StaticResource EditorIconButtonStyle}" Click="btnEditH6_Click"/>
                     <Button Content="Bold"
                             Margin="10,0,0,0"
                             x:Name="btnEditBold"
@@ -317,7 +348,7 @@
                             Style="{StaticResource EditorIconButtonStyle}" Click="btnEdititalic_Click"/>
                     <Button Content="Underline"
                             x:Name="btnEditUnderline"
-                            ToolTip="下線"
+                            ToolTip="下線(Ctrl+U)"
                             Tag="{StaticResource UnderlineIcon}"
                             Style="{StaticResource EditorIconButtonStyle}" Click="btnEditUnderline_Click"/>
                     <Button Content="Strikethrough"
@@ -328,18 +359,18 @@
                     <Button Content="quote"
                             x:Name="btnEditQuote"
                             Tag="{StaticResource QuoteIcon}"
-                            ToolTip="引用"
+                            ToolTip="引用(Ctrl+Q)"
                             Style="{StaticResource EditorIconButtonStyle}" Click="btnEditQuote_Click"/>
+                    <Button Content="link"
+                            x:Name="btnEditLink"
+                            ToolTip="リンク(Ctrl+K)"
+                            Tag="{StaticResource LinkIcon}"
+                            Style="{StaticResource EditorIconButtonStyle}" Click="btnEditLink_Click"/>
                     <Button Content="code"
                             x:Name="btnEditCode"
                             Tag="{StaticResource CodeIcon}"
-                            ToolTip="コード"
+                            ToolTip="コード(Ctrl+@)"
                             Style="{StaticResource EditorIconButtonStyle}" Click="btnEditCode_Click"/>
-                    <Button Content="link"
-                            x:Name="btnEditLink"
-                            ToolTip="リンク"
-                            Tag="{StaticResource LinkIcon}"
-                            Style="{StaticResource EditorIconButtonStyle}" Click="btnEditLink_Click"/>
                     <Button Content="Image"
                             x:Name="btnEditImage"
                             Margin="0,0,0,0"
@@ -361,22 +392,22 @@
                     <Button Content="List"
                             x:Name="btnEditList"
                             Margin="20,0,0,0"
-                            ToolTip="箇条書きリスト"
+                            ToolTip="箇条書きリスト(Ctrl+L)"
                             Tag="{StaticResource FormatListIcon}"
                             Style="{StaticResource EditorIconButtonStyle}" Click="btnEditList_Click"/>
                     <Button Content="ListNum"
                             x:Name="btnEditListNum"
-                            ToolTip="番号付きリスト"
+                            ToolTip="番号付きリスト(Ctrl+Shift+L)"
                             Tag="{StaticResource FormatListNumIcon}"
                             Style="{StaticResource EditorIconButtonStyle}" Click="btnEditListNum_Click"/>
                     <Button Content="Grid"
                             x:Name="btnEditGrid"
-                            ToolTip="テーブルの挿入"
+                            ToolTip="表の挿入(Ctrl+T)"
                             Tag="{StaticResource GridIcon}"
                             Style="{StaticResource EditorIconButtonStyle}" Click="btnEditGrid_Click"/>
                     <Button Content="Color"
                             x:Name="btnEditCodeBlock"
-                            ToolTip="コードブロック"
+                            ToolTip="コードブロック(Ctrl+Shift+@)"
                             Tag="{StaticResource CodeBlockIcon}"
                             Style="{StaticResource EditorIconButtonStyle}" Click="btnEditCodeBlock_Click"/>
                     <ComboBox Width="120" SelectedIndex="0"
